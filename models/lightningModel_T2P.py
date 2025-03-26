@@ -10,7 +10,7 @@ from models import LocalEncoder_hivt
 from models import MLPDecoder_hivt
 from utils import TemporalData
 
-from utils_.iRPE import piecewise_index
+# from utils_.iRPE import piecewise_index
 import itertools
 import torch
 import numpy as np
@@ -353,7 +353,7 @@ class T2P(nn.Module):
 
         # ====== Temporal Body Partition Module =========
         if self.dataset == 'cmu_umpm': index = [[9, 10, 11], [12, 13, 14], [1, 2, 3], [4, 5, 6], [0, 7, 8]]  # 5 body parts
-        elif 'jrdb' in self.dataset: index = [[9, 10, 11], [12, 13, 14], [1, 2, 3], [4, 5, 6], [0, 7, 8]]  # 5 body parts
+        # elif 'jrdb' in self.dataset: index = [[9, 10, 11], [12, 13, 14], [1, 2, 3], [4, 5, 6], [0, 7, 8]]  # 5 body parts
         # if self.dataset == 'cmu_umpm': index = [[8, 9, 10], [11, 12, 13], [1, 2, 3], [4, 5, 6], [0, 7, 14]]  # 5 body parts (original code)
         elif self.dataset == '3dpw': index = [[0, 2, 4], [1, 3, 5], [8, 10, 12], [7, 9, 11], [6, 7, 8]]  # 5 body parts
         part_seq = body_partition(src, index).permute(0, 3, 2, 1)

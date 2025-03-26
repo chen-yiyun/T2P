@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Line3D
 import glob
 from PIL import Image
-from utils_.opt import Options
+# from utils_.opt import Options
 import os
 HUMAN_COLORS = ['orangered', 'limegreen', 'deepskyblue', 'cyan', 'skyblue', 'navy', 'magenta', 'darkturquoise', 'olive', 'dimgray', 'darkorange', 'lightcoral', 'lime', 'yellowgreen', 'peru', 'chocolate', 'orangered', 'navy', 'mediumturquoise', 'crimson', 'red', 'green', 'blue', 'yellow', 'cyan', 'skyblue', 'olive', 'dimgray', 'darkorange',]
 TBI15_BONES = np.array(

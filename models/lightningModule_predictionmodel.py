@@ -100,67 +100,67 @@ class PredictionModel(pl.LightningModule):
                         "FDE_1600ms": FDE(frame_idx=20),
                     }
                 )
-        elif 'jrdb' in self.dataset:
-            if output_time <= 30:
-                metrics = MetricCollection(
-                    {
-                        "APE_1000ms": APE(frame_idx=15),
-                        "APE_overall_1000ms": APE_overall(frame_idx=15),
-                        "JPE_1000ms": JPE(frame_idx=15),
-                        "JPE_overall_1000ms": JPE_overall(frame_idx=15),
-                        "FDE_1000ms": FDE(frame_idx=15),
-                        
-                        "APE_2000ms": APE(frame_idx=30),
-                        "APE_overall_2000ms": APE_overall(frame_idx=30),
-                        "JPE_2000ms": JPE(frame_idx=30),
-                        "JPE_overall_2000ms": JPE_overall(frame_idx=30),
-                        "FDE_2000ms": FDE(frame_idx=30),
-                    }
-                )
-            elif output_time <= 60:
-                metrics = MetricCollection(
-                    {
-                        "APE_1000ms": APE(frame_idx=15),
-                        "APE_overall_1000ms": APE_overall(frame_idx=15),
-                        "JPE_1000ms": JPE(frame_idx=15),
-                        "JPE_overall_1000ms": JPE_overall(frame_idx=15),
-                        "FDE_1000ms": FDE(frame_idx=15),
-                        
-                        "APE_2000ms": APE(frame_idx=30),
-                        "APE_overall_2000ms": APE_overall(frame_idx=30),
-                        "JPE_2000ms": JPE(frame_idx=30),
-                        "JPE_overall_2000ms": JPE_overall(frame_idx=30),
-                        "FDE_2000ms": FDE(frame_idx=30),
-                        
-                        "APE_4000ms": APE(frame_idx=60), "APE_overall_4000ms": APE_overall(frame_idx=60), "JPE_4000ms": JPE(frame_idx=60), "JPE_overall_4000ms": JPE_overall(frame_idx=60), "FDE_4000ms": FDE(frame_idx=60),
-                    }
-                )
-            elif output_time <= 75:
-                metrics = MetricCollection(
-                    {                           
-                        "APE_2500ms": APE(frame_idx=37), "APE_overall_2500ms": APE_overall(frame_idx=37), "JPE_2500ms": JPE(frame_idx=37), "JPE_overall_2500ms": JPE_overall(frame_idx=37), "FDE_2500ms": FDE(frame_idx=37),
-                        "APE_5000ms": APE(frame_idx=75), "APE_overall_5000ms": APE_overall(frame_idx=75), "JPE_5000ms": JPE(frame_idx=75), "JPE_overall_5000ms": JPE_overall(frame_idx=75), "FDE_5000ms": FDE(frame_idx=75),
-                    }
-                )
-            elif output_time <= 90:
-                metrics = MetricCollection(
-                    {
-                        "APE_1000ms": APE(frame_idx=15),
-                        "APE_overall_1000ms": APE_overall(frame_idx=15),
-                        "JPE_1000ms": JPE(frame_idx=15),
-                        "JPE_overall_1000ms": JPE_overall(frame_idx=15),
-                        "FDE_1000ms": FDE(frame_idx=15),
-                        
-                        "APE_2000ms": APE(frame_idx=30),
-                        "APE_overall_2000ms": APE_overall(frame_idx=30),
-                        "JPE_2000ms": JPE(frame_idx=30),
-                        "JPE_overall_2000ms": JPE_overall(frame_idx=30),
-                        "FDE_2000ms": FDE(frame_idx=30),
-                                                
-                        "APE_3000ms": APE(frame_idx=45), "APE_overall_3000ms": APE_overall(frame_idx=45), "JPE_3000ms": JPE(frame_idx=45), "JPE_overall_3000ms": JPE_overall(frame_idx=45), "FDE_3000ms": FDE(frame_idx=45),
-                        "APE_6000ms": APE(frame_idx=90), "APE_overall_6000ms": APE_overall(frame_idx=90), "JPE_6000ms": JPE(frame_idx=90), "JPE_overall_6000ms": JPE_overall(frame_idx=90), "FDE_6000ms": FDE(frame_idx=90),
-                    }
-                )
+        # elif 'jrdb' in self.dataset:
+        #     if output_time <= 30:
+        #         metrics = MetricCollection(
+        #             {
+        #                 "APE_1000ms": APE(frame_idx=15),
+        #                 "APE_overall_1000ms": APE_overall(frame_idx=15),
+        #                 "JPE_1000ms": JPE(frame_idx=15),
+        #                 "JPE_overall_1000ms": JPE_overall(frame_idx=15),
+        #                 "FDE_1000ms": FDE(frame_idx=15),
+        #
+        #                 "APE_2000ms": APE(frame_idx=30),
+        #                 "APE_overall_2000ms": APE_overall(frame_idx=30),
+        #                 "JPE_2000ms": JPE(frame_idx=30),
+        #                 "JPE_overall_2000ms": JPE_overall(frame_idx=30),
+        #                 "FDE_2000ms": FDE(frame_idx=30),
+        #             }
+        #         )
+        #     elif output_time <= 60:
+        #         metrics = MetricCollection(
+        #             {
+        #                 "APE_1000ms": APE(frame_idx=15),
+        #                 "APE_overall_1000ms": APE_overall(frame_idx=15),
+        #                 "JPE_1000ms": JPE(frame_idx=15),
+        #                 "JPE_overall_1000ms": JPE_overall(frame_idx=15),
+        #                 "FDE_1000ms": FDE(frame_idx=15),
+        #
+        #                 "APE_2000ms": APE(frame_idx=30),
+        #                 "APE_overall_2000ms": APE_overall(frame_idx=30),
+        #                 "JPE_2000ms": JPE(frame_idx=30),
+        #                 "JPE_overall_2000ms": JPE_overall(frame_idx=30),
+        #                 "FDE_2000ms": FDE(frame_idx=30),
+        #
+        #                 "APE_4000ms": APE(frame_idx=60), "APE_overall_4000ms": APE_overall(frame_idx=60), "JPE_4000ms": JPE(frame_idx=60), "JPE_overall_4000ms": JPE_overall(frame_idx=60), "FDE_4000ms": FDE(frame_idx=60),
+        #             }
+        #         )
+        #     elif output_time <= 75:
+        #         metrics = MetricCollection(
+        #             {
+        #                 "APE_2500ms": APE(frame_idx=37), "APE_overall_2500ms": APE_overall(frame_idx=37), "JPE_2500ms": JPE(frame_idx=37), "JPE_overall_2500ms": JPE_overall(frame_idx=37), "FDE_2500ms": FDE(frame_idx=37),
+        #                 "APE_5000ms": APE(frame_idx=75), "APE_overall_5000ms": APE_overall(frame_idx=75), "JPE_5000ms": JPE(frame_idx=75), "JPE_overall_5000ms": JPE_overall(frame_idx=75), "FDE_5000ms": FDE(frame_idx=75),
+        #             }
+        #         )
+        #     elif output_time <= 90:
+        #         metrics = MetricCollection(
+        #             {
+        #                 "APE_1000ms": APE(frame_idx=15),
+        #                 "APE_overall_1000ms": APE_overall(frame_idx=15),
+        #                 "JPE_1000ms": JPE(frame_idx=15),
+        #                 "JPE_overall_1000ms": JPE_overall(frame_idx=15),
+        #                 "FDE_1000ms": FDE(frame_idx=15),
+        #
+        #                 "APE_2000ms": APE(frame_idx=30),
+        #                 "APE_overall_2000ms": APE_overall(frame_idx=30),
+        #                 "JPE_2000ms": JPE(frame_idx=30),
+        #                 "JPE_overall_2000ms": JPE_overall(frame_idx=30),
+        #                 "FDE_2000ms": FDE(frame_idx=30),
+        #
+        #                 "APE_3000ms": APE(frame_idx=45), "APE_overall_3000ms": APE_overall(frame_idx=45), "JPE_3000ms": JPE(frame_idx=45), "JPE_overall_3000ms": JPE_overall(frame_idx=45), "FDE_3000ms": FDE(frame_idx=45),
+        #                 "APE_6000ms": APE(frame_idx=90), "APE_overall_6000ms": APE_overall(frame_idx=90), "JPE_6000ms": JPE(frame_idx=90), "JPE_overall_6000ms": JPE_overall(frame_idx=90), "FDE_6000ms": FDE(frame_idx=90),
+        #             }
+        #         )
         # self.val_metrics = metrics.clone(prefix="val_")
 
         self.val_metrics = metrics.clone()
