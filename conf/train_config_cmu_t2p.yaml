@@ -1,0 +1,53 @@
+# 默认的配置文件
+defaults:
+  - _self_
+  - hydra: default
+  - datamodule: cmu_umpm
+  - model: prediction_model
+  - net: t2p_jrdb
+output: 'cmu_t2p' # 输出的文件名或路径。
+dataset: 'cmu_umpm' # 数据集
+is_baseline: False # 是否是基线模型
+desc: debug # 描述
+seed: 3340 # 随机数种子，用于保证实验的可重复性
+monitor: val/JPE_overall_2000ms # 监控的指标，用于保存最佳模型
+save_top_k: 3 # 保存前k个最佳模型
+viz_traj: True # 是否可视化轨迹
+viz_joint: True # 是否可视化关节
+viz_joint_jansang: True # 是否可视化关节（可能是特定的可视化方式）
+kernel_size: 5 # 卷积核大小
+sampling_method: 'ade' # 采样方法，这里是`ade`
+local_radius: 0.1 # 局部半径，可能用于某种局部采样或计算
+
+input_time: 25 #  输入时间步长
+output_time: 50 # 输出时间步长
+num_modes: 6 # 模式数量，可能用于多模态预测
+num_joints: 15  # 关节数量
+
+data_root:  # 数据根目录
+checkpoint: 'D:\Downloads\T2P\T2P-main\outputs\cmu_t2p\2025-03-24\13-47-14_debug\checkpoints\epoch=59-step=6120.ckpt' # 检查点路径
+pretrained_weights: # 预训练权重路径
+
+# trainer
+#num_workers: 32 # 数据加载器的工作者数量
+num_workers: 0
+gpus: 1 # 使用的GPU数量
+sync_bn: true # 是否使用同步归一化
+batch_size: 64   # 批量大小
+epochs: 60  # 训练的轮数
+warmup_epochs: 10 # 预热轮数
+
+
+# optimizer
+lr: 0.0003  # 学习率
+weight_decay: 2   # 权重衰减
+gradient_clip_val: 5 # 梯度裁剪值
+gradient_clip_algorithm: norm # 梯度裁剪算法
+
+limit_train_batches:  # 限制训练批次
+limit_val_batches:   # 限制验证批次
+limit_test_batches: # 限制测试批次
+log_model: all  # 记录模型的方式
+test: true # 是否进行测试
+
+wandb: disable  # 是否启用Weights & Biases进行实验跟踪
