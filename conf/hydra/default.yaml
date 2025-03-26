@@ -1,2 +1,8 @@
+# 运行输出目录配置
+# outputs/: 基础输出目录
+# ${output}: 输出子目录名称
+# ${now:%Y-%m-%d}: 当前日期,格式为年-月-日
+# ${now:%H-%M-%S}: 当前时间,格式为时-分-秒
+# ${desc}: 实验描述标识
 run:
   dir: outputs/${output}/${now:%Y-%m-%d}/${now:%H-%M-%S}_${desc}

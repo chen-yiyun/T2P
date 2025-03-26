@@ -11,18 +11,18 @@ from torch_geometric.data import DataLoader
 from dataset.t2p_dataset import T2PDataset
 
 
-# JRDB数据集的数据模块类,继承自LightningDataModule
-class jrdb_DataModule(LightningDataModule):
+# 3DPW数据集的数据模块类,继承自LightningDataModule
+class ThreeDPW_DataModule(LightningDataModule):
     def __init__(
         self,
         train_args: Dict,  # 训练参数字典
-        val_args: Dict,    # 验证参数字典 
+        val_args: Dict,    # 验证参数字典
         test_args: Dict,   # 测试参数字典
         shuffle: bool = True,  # 是否打乱数据
         num_workers: int = 8,  # 数据加载的工作进程数
         pin_memory: bool = True,  # 是否将数据固定在内存中
     ):
-        super(jrdb_DataModule, self).__init__()
+        super(ThreeDPW_DataModule, self).__init__()
         # 初始化参数字典
         self.train_args, self.val_args, self.test_args = {}, {}, {}
         # 更新各个阶段的参数

@@ -1,16 +1,8 @@
-# Copyright (c) 2022, Zikang Zhou. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+'''
+一些工具函数
+包含时序数据类、基于距离的边过滤类、神经网络权重初始化函数等
+'''
+# 导入必要的库
 from typing import List, Optional, Tuple
 
 import torch
@@ -18,8 +10,13 @@ import torch.nn as nn
 from torch_geometric.data import Data
 
 
+# 时序数据类,继承自PyG的Data类
 class TemporalData(Data):
-
+    """
+    用于处理时序轨迹数据的数据结构类。
+    包含节点特征(x)、位置(positions)、边索引(edge_index)、边特征(edge_attrs)等属性。
+    还包含掩码、旋转角度、车道信息等轨迹预测相关的特征。
+    """
     def __init__(self,
                  x: Optional[torch.Tensor] = None,
                  positions: Optional[torch.Tensor] = None,
@@ -59,8 +56,12 @@ class TemporalData(Data):
             return super().__inc__(key, value, *args, **kwargs)
 
 
+# 基于距离的边过滤类
 class DistanceDropEdge(object):
-
+    """
+    根据边的距离属性过滤边。
+    如果边的距离大于max_distance,则将其删除。
+    """
     def __init__(self, max_distance: Optional[float] = None) -> None:
         self.max_distance = max_distance
 
@@ -75,8 +76,11 @@ class DistanceDropEdge(object):
         edge_attr = edge_attr[mask]
         return edge_index, edge_attr
 
+# 全局基于距离的边过滤类
 class DistanceDropEdge_global(object):
-
+    """
+    与DistanceDropEdge类似,但接受额外的edge_attr_forMask参数用于过滤。
+    """
     def __init__(self, max_distance: Optional[float] = None) -> None:
         self.max_distance = max_distance
 
@@ -93,7 +97,17 @@ class DistanceDropEdge_global(object):
         return edge_index, edge_attr
 
 
+# 神经网络权重初始化函数
 def init_weights(m: nn.Module) -> None:
+    """
+    对不同类型的神经网络层进行权重初始化:
+    - 线性层: Xavier均匀初始化
+    - 卷积层: 均匀分布初始化
+    - Embedding层: 正态分布初始化
+    - BatchNorm/LayerNorm: 权重为1,偏置为0
+    - 多头注意力层: Xavier/均匀分布初始化
+    - LSTM/GRU: Xavier/正交初始化
+    """
     if isinstance(m, nn.Linear):
         nn.init.xavier_uniform_(m.weight)
         if m.bias is not None:

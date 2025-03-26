@@ -1,25 +1,48 @@
 target:
+  # T2P模型的目标类
   _target_: models.lightningModel_T2P.T2P
+  # 输入维度
   input_dim: 128
+  # 模型维度
   d_model: 128
+  # 内部维度
   d_inner: 1024
+  # Transformer层数
   n_layers: 2
+  # 注意力头数
   n_head: 8
+  # 键向量维度
   d_k: 64
+  # 值向量维度
   d_v: 64
+  # Dropout比率
   dropout: 0.2
+  # 运行设备
   device: 'cuda'
+  # 卷积核大小
   kernel_size: ${kernel_size}
+  # 轨迹查询维度,需要与hivt_embed_dim匹配
   d_traj_query: 128     # Need to match
   opt: 
+    # 卷积核大小
     kernel_size: ${kernel_size}
+    # 输入时间步长
     input_time: ${input_time}
+    # 输出时间步长
     output_time: ${output_time}
+    # HIVT嵌入维度,需要与d_traj_query匹配
     hivt_embed_dim: 128 # Need to match
+    # 预测模态数量
     num_modes: ${num_modes}
+    # 运行设备
     device: 'cuda'
+    # 温度参数
     theta: 2000
+    # 批次大小
     batch_size: ${batch_size}
+    # 关节点数量
     num_joints: ${num_joints}
+    # 数据集名称
     dataset: ${dataset}
+    # 采样方法
     sampling_method: ${sampling_method}

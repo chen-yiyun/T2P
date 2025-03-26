@@ -1,18 +1,27 @@
-_target_: dataset.jrdb_datamodule.jrdb_DataModule
+# 3DPW数据集配置文件
 
+# 指定数据模块类
+_target_: dataset.3dpw_datamodule.ThreeDPW_DataModule
+
+# 训练集参数
 train_args:
-  - dataset: '3dpw'
-  - input_time: ${input_time}
-  - bs: ${batch_size}
+  - dataset: '3dpw'        # 数据集名称
+  - input_time: ${input_time}  # 输入序列长度
+  - bs: ${batch_size}      # 训练批次大小
+
+# 验证集参数
 val_args:
-  - dataset: '3dpw'
-  - input_time: ${input_time}
-  - bs: ${batch_size}
+  - dataset: '3dpw'        # 数据集名称
+  - input_time: ${input_time}  # 输入序列长度
+  - bs: ${batch_size}      # 验证批次大小
+
+# 测试集参数
 test_args:
-  - dataset: '3dpw'
-  - input_time: ${input_time}
-  - bs: ${batch_size}
-shuffle: True
-# augmentations: null
-num_workers: ${num_workers}
-pin_memory: False
+  - dataset: '3dpw'        # 数据集名称
+  - input_time: ${input_time}  # 输入序列长度
+  - bs: ${batch_size}      # 测试批次大小
+
+shuffle: True              # 是否打乱数据
+# augmentations: null      # 数据增强配置
+num_workers: ${num_workers}  # 数据加载线程数
+pin_memory: False          # 是否将数据固定在内存中

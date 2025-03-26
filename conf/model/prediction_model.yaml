@@ -1,16 +1,30 @@
+# 模型名称
 name: t2p_v2
 
 target:
+  # 目标模型类
   _target_: models.lightningModule_predictionmodel.PredictionModel
+  # 学习率
   lr: ${lr}
+  # 权重衰减
   weight_decay: ${weight_decay}
+  # 总训练轮数
   epochs: ${epochs}
+  # 预热训练轮数
   warmup_epochs: ${warmup_epochs}
+  # 预测输出时间步长
   output_time: ${output_time}
+  # 数据集名称
   dataset: ${dataset}
+  # 批次大小
   batch_size: ${batch_size}
+  # 是否为基线模型
   is_baseline: ${is_baseline}
+  # 人体关节点数量
   num_joints: ${num_joints}
+  # 是否可视化轨迹
   viz_traj: ${viz_traj}
+  # 是否可视化关节点
   viz_joint: ${viz_joint}
+  # 是否可视化jansang关节点
   viz_joint_jansang: ${viz_joint_jansang}

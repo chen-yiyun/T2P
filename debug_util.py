@@ -1,3 +1,7 @@
+'''
+在3dpw里引用了，但好像没起作用
+'''
+
 import os
 import os.path as osp
 from pathlib import Path
