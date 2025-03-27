@@ -1,11 +1,12 @@
 # 默认配置
+# 默认配置
 defaults:
-  - _self_
-  - hydra: default
-  - datamodule: 3dpw
-  - model: prediction_model
-  - net: t2p
-output: 3dpw_t2p
+  - _self_  # 当前配置文件
+  - hydra: default  # hydra默认配置
+  - datamodule: 3dpw  # 3DPW数据集配置
+  - model: prediction_model  # 预测模型配置
+  - net: t2p  # T2P网络配置
+output: 3dpw_t2p  # 输出目录名称
 
 # 基本设置
 is_baseline: False  # 是否为基线模型

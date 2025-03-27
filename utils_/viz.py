@@ -1,3 +1,7 @@
+"""
+可视化工具
+"""
+
 # 导入必要的库
 import torch
 import numpy as np
@@ -188,7 +192,7 @@ def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None):
         batch_idx: 批次索引
         bones: 骨骼连接关系
     """
-    print(f"Visualizing trajectory of batch {batch_idx}")
+    # print(f"Visualizing trajectory of batch {batch_idx}")
     # 创建输出目录
     if not os.path.isdir(os.path.join(output_dir, "viz_results", "joint")):
         os.makedirs(os.path.join(output_dir, "viz_results", "joint"))
@@ -837,7 +841,7 @@ def save_as_gif_v2(gif_save_dir, frame_save_dir, gifFrames, batch_idx, scene_idx
     """将PNG图片序列保存为GIF动画
     Args:
         gif_save_dir: GIF保存目录
-        frame_save_dir: 帧图片目录 
+        frame_save_dir: 帧图片目录
         gifFrames: 每个GIF包含的帧数
         batch_idx: 批次索引
         scene_idx_list: 场景索引列表
@@ -846,7 +850,7 @@ def save_as_gif_v2(gif_save_dir, frame_save_dir, gifFrames, batch_idx, scene_idx
     imgs = glob.glob(frame_save_dir + "/*.png")
     imgs = sorted(imgs)
     frames_ = []
-    
+
     # 读取所有图片并保存到列表中
     for img in imgs:
         temp = Image.open(img)
@@ -855,16 +859,16 @@ def save_as_gif_v2(gif_save_dir, frame_save_dir, gifFrames, batch_idx, scene_idx
         temp.close()
 
     frames = frames_
-    
+
     # 如果未指定帧数,使用所有帧
     if gifFrames is None:
         gifFrames = len(frames)
-        
+
     # 按指定帧数分批生成GIF
     for batchIdx in range(len(frames) // gifFrames):
         # 生成GIF文件名
         gifFilename = f"batch_{batch_idx}_frames_{batchIdx*gifFrames}_{(batchIdx+1)*gifFrames}.gif"
-        
+
         # 保存GIF动画
         frames[0 + int(batchIdx * gifFrames)].save(
             os.path.join(gif_save_dir, gifFilename),
