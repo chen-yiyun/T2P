@@ -34,7 +34,7 @@ class PredictionModel(pl.LightningModule):
         epochs: int = 60,                  # 总训练轮数
         weight_decay: float = 1e-4,        # 权重衰减
         output_time: int = 50,             # 输出时间步长
-        dataset: str = "cmu_umpm",         # 数据集名称
+        dataset: str = "3dpw",         # 数据集名称
         batch_size: int = 0,               # 批次大小
         is_baseline: bool = False,         # 是否为基线模型
         num_joints: int = 15,              # 关节点数量

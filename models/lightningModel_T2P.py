@@ -249,7 +249,7 @@ def body_partition(mydata, index):
 class T2P(nn.Module):
     """
     主模型T2P(Trajectory to Pose)
-    包含轨迹预测和局部姿态预测两个分支
+    包含轨迹预测和局部姿态预测两个分支                      
     """
 
     def __init__(
@@ -410,6 +410,12 @@ class T2P(nn.Module):
         前向传播
         batch_data: 输入数据批次
         mode: 'train'或'eval'模式
+        
+        return:
+            predicted_motion: 预测的轨迹
+            gt: 真实轨迹
+            rec: 局部姿态预测
+            offset_output: 相对位置预测
         """
         # 准备输入数据
         input_seq, output_seq = (
@@ -546,20 +552,15 @@ class T2P(nn.Module):
         身体编码前向传播
         src: 输入序列
         n_person: 人数
+
+        return:
+            enc_out: 编码器输出
         """
-        bn = src.shape[0]
-        bs = int(bn / n_person)
+        bn = src.shape[0]  # 获取输入序列的批次大小
+        bs = int(bn / n_person)  # 计算每个个体的批次大小
 
         # 身体部位分割
-        if self.dataset == "cmu_umpm":
-            index = [
-                [9, 10, 11],
-                [12, 13, 14],
-                [1, 2, 3],
-                [4, 5, 6],
-                [0, 7, 8],
-            ]  # 5个身体部位
-        elif self.dataset == "3dpw":
+        if self.dataset == "3dpw":
             index = [
                 [0, 2, 4],
                 [1, 3, 5],
@@ -582,6 +583,9 @@ class T2P(nn.Module):
         """
         src_seq:  B*N, T, J*3
         局部姿态预测前向传播
+
+        return:
+            dec_out: 解码器输出
         """
         num_modes = traj_query.shape[0]
         bn = src.shape[0]
@@ -614,6 +618,11 @@ class T2P(nn.Module):
         """
         轨迹预测前向传播
         使用HiVT组件进行预测
+
+        return:
+            y_hat: 预测的轨迹
+            pi: 预测的轨迹索引
+            out_feature: 预测的轨迹特征
         """
         local_embed = self.local_encoder_traj(
             data=input_traj_temporalData, enc_feat=enc_feat

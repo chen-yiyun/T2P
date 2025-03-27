@@ -274,6 +274,7 @@ class _3DPW(Dataset):
         6. 整理并保存处理后的数据
         """
         # 遍历每个数据样本
+        # token: B/N_sequences, N/N_agents, T, J, 3 中的 N_sequences 的索引
         for token in tqdm(tokens):
             # 1. 读取原始数据
             N, T, _, _ = self._raw_file[token].shape
@@ -281,27 +282,39 @@ class _3DPW(Dataset):
             body_xyz = torch.tensor(seq_data, dtype=torch.float)
 
             # 2. 分离输入输出轨迹
+            # 将seq_data分割为输入轨迹和输出轨迹:
+            # 1. 取seq_data的第一个关节点(髋关节,索引为0)的位置/坐标信息
+            # 2. 每个智能体前ref_time帧/时间步里第一个关节点的坐标变化作为输入轨迹input_traj
+            # 3. 每个智能体后续帧/时间步里第一个关节点的坐标变化作为输出轨迹output_traj
+            # 4. 转换为float类型的tensor
             input_traj, output_traj = torch.tensor(
                 seq_data[:, : self.ref_time, 0], dtype=torch.float
             ), torch.tensor(
                 seq_data[:, self.ref_time :, 0], dtype=torch.float
-            )  # todo：Only hip joint info(只有髋关节信息)
+            )  # todo：Only hip joint info(只有髋关节信息)/注:只使用髋关节位置来表示整体运动轨迹
+            # 髋部法：用每个智能体的髋关节的位置变化来代表全局意图/全局轨迹
 
+            # 图结构的边连接关系/生成边索引，表示所有可能的节点对
             edge_index = (
                 torch.LongTensor(list(permutations(range(N), 2))).t().contiguous()
             )
 
             # 3. 计算相对位移
-            x = torch.cat((input_traj, output_traj), dim=1)
-            positions = x.clone()
+            # 将输入轨迹和输出轨迹拼接在一起
+            x = torch.cat((input_traj, output_traj), dim=1)  # x表示拼接后的轨迹数据
+            # 克隆x，用于保存原始位置信息
+            positions = x.clone()  # positions表示原始轨迹的绝对位置
+            # 计算输出轨迹相对于输入轨迹的相对位移
             x[:, self.ref_time :] = x[:, self.ref_time :] - x[
                 :, self.ref_time - 1
-            ].unsqueeze(-2)
+            ].unsqueeze(
+                -2
+            )  # 计算输出轨迹相对于最后一个输入轨迹的相对位移
             x[:, 1 : self.ref_time] = (
                 x[:, 1 : self.ref_time] - x[:, : self.ref_time - 1]
-            )
-            x[:, 0] = torch.zeros(N, 3)
-            y = x[:, self.ref_time :]
+            )  # 计算输入轨迹的相对位移
+            x[:, 0] = torch.zeros(N, 3)  # 将第一个时间步的相对位移设为零
+            y = x[:, self.ref_time :]  # y表示输出轨迹
 
             # 4. 创建掩码
             padding_mask = torch.zeros(N, T, dtype=torch.bool)
@@ -341,11 +354,17 @@ class _3DPW(Dataset):
                 rotate_mat = None
 
             # 6. 整理并保存数据
+            """
+            N = 2
+            T: 时间步长=input_time+output_time=30; ref_time=input_time=10
+            J = 13
+            3 = 坐标值zxy
+            """
             # 将处理后的数据整理成字典,包含以下字段:
-            # body_xyz: 人体关节点的原始3D坐标序列 [N, T, J*3]
+            # body_xyz: 人体关节点的原始3D坐标序列 [N, T, J, 3]
             # x: 参考帧之前的相对位移序列 [N, ref_time, 3]
             # positions: 所有帧的绝对位置序列 [N, T, 3]
-            # rotate_angles: 每个actor的旋转角度 [N]
+            # rotate_angles: 每个智能体的旋转角度 [N]
             # padding_mask: 时序数据的padding掩码 [N, T]
             # edge_index: 图结构的边连接关系 [2, num_edges]
             # bos_mask: 序列起始位置的掩码 [N, ref_time]
@@ -434,7 +453,7 @@ if __name__ == "__main__":
     # 处理训练集
     A1D = _3DPW(
         "train",
-        process_dir="D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2",
+        process_dir="D:/Downloads/T2P/T2P-main/preprocessed1/3dpw_input10_v2",
         root="data/",
         process=True,
         spec_args=spec_args,
@@ -442,7 +461,7 @@ if __name__ == "__main__":
     # 处理验证集
     A1D = _3DPW(
         "val",
-        process_dir="D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2",
+        process_dir="D:/Downloads/T2P/T2P-main/preprocessed1/3dpw_input10_v2",
         root="data/",
         process=True,
         spec_args=spec_args,
@@ -450,7 +469,7 @@ if __name__ == "__main__":
     # 处理测试集
     A1D = _3DPW(
         "test",
-        process_dir="D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2",
+        process_dir="D:/Downloads/T2P/T2P-main/preprocessed1/3dpw_input10_v2",
         root="data/",
         process=True,
         spec_args=spec_args,

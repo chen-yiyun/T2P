@@ -21,6 +21,7 @@ sampling_method: 'ade'  # 采样方法
 local_radius: 50  # 局部半径
 
 # 模型参数
+# 输入前10帧/时间步，输出后20帧/时间步
 input_time: 10  # 输入时间步长
 output_time: 20  # 输出时间步长
 num_modes: 6  # 模态数量

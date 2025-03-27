@@ -1,5 +1,5 @@
 """
-JRDB数据集的数据模块类,继承自LightningDataModule
+3dpw数据集的数据模块类,继承自LightningDataModule
 """
 # 导入所需的库
 from pathlib import Path
