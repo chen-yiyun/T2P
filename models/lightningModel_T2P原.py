@@ -162,7 +162,7 @@ class TBIFormerEncoder(nn.Module):
 
         src = src.reshape(sz_b, -1, d)
 
-        enc_in = self.embeddings(src, n, p, t)   # 时间和身份编码
+        enc_in = self.embeddings(src, n, p, t)  # 时间和身份编码
 
         enc_output = enc_in
         for enc_layer in self.layer_stack:
@@ -249,7 +249,7 @@ def body_partition(mydata, index):
 class T2P(nn.Module):
     """
     主模型T2P(Trajectory to Pose)
-    包含轨迹预测和局部姿态预测两个分支                      
+    包含轨迹预测和局部姿态预测两个分支
     """
 
     def __init__(
@@ -278,6 +278,7 @@ class T2P(nn.Module):
         self.input_time = opt.input_time
         self.num_joints = opt.num_joints
         self.dataset = opt.dataset
+        self.method = opt.method
         self.sampling_method = opt.sampling_method
 
         # 2D卷积层,用于特征提取
@@ -410,7 +411,7 @@ class T2P(nn.Module):
         前向传播
         batch_data: 输入数据批次
         mode: 'train'或'eval'模式
-        
+
         return:
             predicted_motion: 预测的轨迹
             gt: 真实轨迹
@@ -437,10 +438,34 @@ class T2P(nn.Module):
             output_seq.shape[0] * output_seq.shape[1], -1, input_seq.shape[-1]
         )
 
-        # 计算相对位置 / Relative position to hip joint
+        # 计算相对位置
         input_ = input_.reshape(-1, self.opt.input_time, self.num_joints, 3)
-        input_hip = input_[:, :, 0, :].unsqueeze(-2).repeat(1, 1, self.num_joints, 1)
-        offset = input_ - input_hip
+        if self.method == "hip":
+            # 髋关节位置作为参考点
+            input_hip = (
+                input_[:, :, 0, :].unsqueeze(-2).repeat(1, 1, self.num_joints, 1)
+            )
+            offset = input_ - input_hip
+        elif self.method == "mean":
+            # 计算均值并广播到所有关节
+            input_mean = (
+                input_.mean(dim=2).unsqueeze(-2).repeat(1, 1, self.num_joints, 1)
+            )
+            offset = input_ - input_mean  # 计算相对位置
+        elif self.method == "weighted":
+            # 加权平均法：为不同关节分配权重
+            # 定义权重（示例权重，可以根据需要调整）
+            # 假设有13个关节点，为简单起见，我们为髋关节设置较高权重
+            weights = torch.ones(self.num_joints)
+            weights[0] = 2.0  # 髋关节权重更高
+            # 对于其他关节可以根据重要性设置权重
+            # 例如，躯干可能比四肢更重要
+            weights = weights / weights.sum()  # 归一化权重
+            # ?计算加权平均位置并广播到所有关节
+            input_weighted = torch.tensordot(input_, weights, dims=([2], [0]))
+            offset = input_ - input_weighted
+        else:
+            raise ValueError(f"Invalid method: {self.method}")
 
         # 计算时间位移
         offset = offset.reshape(-1, self.opt.input_time, input_seq.shape[-1])
@@ -483,8 +508,35 @@ class T2P(nn.Module):
         output_ = output_[:, :, :].reshape(
             -1, self.opt.output_time + 1, self.num_joints, 3
         )  #   Relative position to hip joint
-        output_hip = output_[:, :, 0, :].unsqueeze(-2).repeat(1, 1, self.num_joints, 1)
-        offset_output = output_ - output_hip
+        if self.method == "hip":
+            # 髋关节位置作为参考点
+            output_hip = (
+                output_[:, :, 0, :].unsqueeze(-2).repeat(1, 1, self.num_joints, 1)
+            )
+            offset_output = output_ - output_hip
+        elif self.method == "mean":
+            # 计算均值并广播到所有关节
+            output_mean = (
+                output_.mean(dim=2).unsqueeze(-2).repeat(1, 1, self.num_joints, 1)
+            )
+            offset_output = output_ - output_mean
+        elif self.method == "weighted":
+            # 加权平均法：为不同关节分配权重
+            # 定义权重（示例权重，可以根据需要调整）
+            # 假设有13个关节点，为简单起见，我们为髋关节设置较高权重
+            weights = torch.ones(self.num_joints)
+            weights[0] = 2.0  # 髋关节权重更高
+            weights = weights / weights.sum()  # 归一化权重
+            # 计算加权平均位置并广播到所有关节
+            output_weighted = (
+                (output_ * weights.view(1, 1, -1, 1))
+                .sum(dim=2)
+                .unsqueeze(-2)
+                .repeat(1, 1, self.num_joints, 1)
+            )
+            offset_output = output_ - output_weighted
+        else:
+            raise ValueError(f"Invalid method: {self.method}")
 
         # 评估模式
         if mode == "eval":
