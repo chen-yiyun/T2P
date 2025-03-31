@@ -14,6 +14,8 @@ target:
   warmup_epochs: ${warmup_epochs}
   # 预测输出时间步长
   output_time: ${output_time}
+  # 关节点选择方法
+  method: ${method}
   # 数据集名称
   dataset: ${dataset}
   # 批次大小

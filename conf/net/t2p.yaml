@@ -18,12 +18,12 @@ target:
   # Dropout比率
   dropout: 0.2
   # 运行设备
-  device: 'cuda'
+  device: "cuda"
   # 卷积核大小
   kernel_size: ${kernel_size}
   # 轨迹查询维度,需要与hivt_embed_dim匹配
-  d_traj_query: 128     # Need to match
-  opt: 
+  d_traj_query: 128 # Need to match
+  opt:
     # 卷积核大小
     kernel_size: ${kernel_size}
     # 输入时间步长
@@ -35,7 +35,7 @@ target:
     # 预测模态数量
     num_modes: ${num_modes}
     # 运行设备
-    device: 'cuda'
+    device: "cuda"
     # 温度参数
     theta: 2000
     # 批次大小
@@ -44,5 +44,7 @@ target:
     num_joints: ${num_joints}
     # 数据集名称
     dataset: ${dataset}
+    # 关节点选择方法
+    method: ${method}
     # 采样方法
     sampling_method: ${sampling_method}

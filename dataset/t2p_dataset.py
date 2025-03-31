@@ -11,11 +11,14 @@ class T2PDataset(Dataset):
     T2P数据集类,用于处理和加载轨迹预测数据
     """
 
-    def __init__(self, dataset, mode=0, device="cuda", transform=None, input_time=None):
+    def __init__(
+        self, dataset, method, mode=0, device="cuda", transform=None, input_time=None
+    ):
         """
         初始化函数
         Args:
             dataset: 数据集名称,目前支持'3dpw'
+            method: 关节点选择方法
             mode: 0表示训练集,1表示验证集
             device: 计算设备
             transform: 数据增强变换
@@ -26,21 +29,24 @@ class T2PDataset(Dataset):
             self.num_person = 2  # 每个场景2个人
             if input_time != 10:
                 raise Exception("Input time step other than 10 is not implemented yet")
-            # 根据mode加载训练集或验证集
+            # 根据mode和method加载训练集或验证集
             if mode == 0:
                 self.data = glob.glob(
-                    "D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2/train/*.pt"
+                    f"D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2/{method}/train/*.pt"
                 )
+                print("loading train data from ", f"D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2/{method}/train/*.pt")
             elif mode == 1:
                 self.data = glob.glob(
-                    "D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2/val/*.pt"
+                    f"D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2/{method}/val/*.pt"
                 )
+                print("loading val data from ", f"D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2/{method}/val/*.pt")
         self.data = sorted(self.data)
         self.len_ = len(self.data)
         self.device = device
         self.dataset = dataset
         self.transform = transform
         self.input_time = input_time
+        self.method = method
         super(T2PDataset, self).__init__(transform=transform)
 
     def get(self, idx):

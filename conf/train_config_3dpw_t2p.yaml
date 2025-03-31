@@ -1,59 +1,59 @@
 # 默认配置
-# 默认配置
 defaults:
-  - _self_  # 当前配置文件
-  - hydra: default  # hydra默认配置
-  - datamodule: 3dpw  # 3DPW数据集配置
-  - model: prediction_model  # 预测模型配置
-  - net: t2p  # T2P网络配置
-output: 3dpw_t2p  # 输出目录名称
+  - _self_ # 当前配置文件
+  - hydra: default # hydra默认配置
+  - datamodule: 3dpw # 3DPW数据集配置
+  - model: prediction_model # 预测模型配置
+  - net: t2p # T2P网络配置
+output: 3dpw_t2p # 输出目录名称
 
 # 基本设置
-is_baseline: False  # 是否为基线模型
-desc: debug  # 描述
-seed: 1234  # 随机种子
-monitor: val/JPE_overall_1600ms  # 监控指标
-save_top_k: 3  # 保存最好的k个模型
-viz_traj: False  # 是否可视化轨迹
-viz_joint: False  # 是否可视化关节点
-viz_joint_jansang: False  # 是否可视化jansang关节点
-kernel_size: 4  # 卷积核大小
-sampling_method: 'ade'  # 采样方法
-local_radius: 50  # 局部半径
+is_baseline: False # 是否为基线模型
+desc: debug # 描述
+seed: 1234 # 随机种子
+monitor: val/JPE_overall_1600ms # 监控指标
+save_top_k: 3 # 保存最好的k个模型
+viz_traj: False # 是否可视化轨迹
+viz_joint: False # 是否可视化关节点
+viz_joint_jansang: False # 是否可视化jansang关节点
+kernel_size: 4 # 卷积核大小
+sampling_method: "ade" # 采样方法
+local_radius: 50 # 局部半径
 
 # 模型参数
-input_time: 10  # 输入时间步长
-output_time: 20  # 输出时间步长
-num_modes: 6  # 预测模态数量
-dataset: '3dpw'  # 数据集名称
-num_joints: 13  # 关节点数量
+input_time: 10 # 输入时间步长
+output_time: 20 # 输出时间步长
+num_modes: 6 # 预测模态数量
+method: "weighted" # 关节点选择方法
+dataset: "3dpw" # 数据集名称
+num_joints: 13 # 关节点数量
 
 # 路径配置
-data_root:  # 数据根目录
-checkpoint:  # 检查点路径
-pretrained_weights:  # 预训练权重路径
+data_root: # 数据根目录
+checkpoint: # 检查点路径
+pretrained_weights: # 预训练权重路径
 
 # 训练器配置
 #num_workers: 32  # 数据加载线程数
-num_workers: 0  # 当前使用的数据加载线程数
-gpus: 1  # GPU数量
-sync_bn: true  # 是否同步批归一化
-#batch_size: 64  # 批次大小(已注释)
-batch_size: 24  # 当前使用的批次大小
-epochs: 60  # 训练轮数
-warmup_epochs: 10  # 预热训练轮数
+num_workers: 0 # 当前使用的数据加载线程数
+gpus: 1 # GPU数量
+sync_bn: true # 是否同步批归一化
+batch_size: 64 # 批次大小(已注释)
+# batch_size: 24 # 当前使用的批次大小
+epochs: 60 # 训练轮数
+warmup_epochs: 10 # 预热训练轮数
 
 # 优化器配置
-lr: 0.0003  # 学习率
-weight_decay: 2  # 权重衰减
-gradient_clip_val: 5  # 梯度裁剪值
-gradient_clip_algorithm: norm  # 梯度裁剪算法
+lr: 0.0003 # 学习率
+weight_decay: 2 # 权重衰减
+gradient_clip_val: 5 # 梯度裁剪值
+gradient_clip_algorithm: norm # 梯度裁剪算法
 
 # 其他配置
-limit_train_batches:  # 限制训练批次数
-limit_val_batches:  # 限制验证批次数
-limit_test_batches:  # 限制测试批次数
-log_model: all  # 模型日志记录方式
-test: false  # 是否测试
+limit_train_batches: # 限制训练批次数
+limit_val_batches: # 限制验证批次数
+limit_test_batches: # 限制测试批次数
+log_model: all # 模型日志记录方式
+test: false # 是否测试
 
-wandb: disable  # 是否启用Weights & Biases进行实验跟踪
+wandb: disable # 是否启用Weights & Biases进行实验跟踪

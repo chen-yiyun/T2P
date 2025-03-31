@@ -1,0 +1,1432 @@
+<!doctype lake>
+<title>代码解读</title>
+<meta name="doc-version" content="1" />
+<meta name="viewport" content="adapt" />
+<meta name="typography" content="classic" />
+<meta name="paragraphSpacing" content="relax" />
+<h1 data-lake-id="wLk1i" id="wLk1i" style="text-align: left">
+  <span data-lake-id="ufd67b563" id="ufd67b563">一、3pdw 数据集</span>
+</h1>
+<table data-lake-id="OzZ96" id="OzZ96" margin="true" class="lake-table" style="width: 750px">
+  <colgroup>
+    <col width="250">
+      <col width="250">
+        <col width="250">
+        </colgroup>
+        <tbody>
+          <tr data-lake-id="u3c253d50" id="u3c253d50" style="height: 33px">
+            <td data-lake-id="u2c1a3042" id="u2c1a3042">
+              <ol list="u588dee51">
+                <li fid="uc917630e" data-lake-id="2819cebc58c6b0a2b1595f7b62fb42fb" id="2819cebc58c6b0a2b1595f7b62fb42fb" style="text-align: left">
+                  <span data-lake-id="u19099b66" id="u19099b66"># 源数据（若干pkl，见sequenceFiles.zip）</span>
+                </li>
+                <li fid="uc917630e" data-lake-id="2a93452c98db1b75b872c06ab133aef5" id="2a93452c98db1b75b872c06ab133aef5" style="text-align: left">
+                  <span data-lake-id="u4c305fa9" id="u4c305fa9">train 24</span>
+                </li>
+                <li fid="uc917630e" data-lake-id="707a302d1b93a3b75a2408c519d070a0" id="707a302d1b93a3b75a2408c519d070a0" style="text-align: left">
+                  <span data-lake-id="uce32cd5c" id="uce32cd5c">test 24</span>
+                </li>
+                <li fid="uc917630e" data-lake-id="84f2c91c4549e6912245992db1d5597a" id="84f2c91c4549e6912245992db1d5597a" style="text-align: left">
+                  <span data-lake-id="ud73e1b3d" id="ud73e1b3d">valid 12</span>
+                </li>
+              </ol>
+            </td>
+            <td data-lake-id="u3684d42f" id="u3684d42f">
+              <ol list="u20d7d381">
+                <li fid="u293301df" data-lake-id="283ae8ca89f933fc79ebd5f88d1c4c38" id="283ae8ca89f933fc79ebd5f88d1c4c38" style="text-align: left">
+                  <span data-lake-id="u41f609fd" id="u41f609fd"># 处理前(一个posedata.pkl) 序列数量</span>
+                </li>
+                <li fid="u293301df" data-lake-id="0711de9977c31c34413183a50a3432a2" id="0711de9977c31c34413183a50a3432a2" style="text-align: left">
+                  <span data-lake-id="ubb575492" id="ubb575492">train 6479</span>
+                </li>
+                <li fid="u293301df" data-lake-id="59bad886d357209cc565e209a96962b2" id="59bad886d357209cc565e209a96962b2" style="text-align: left">
+                  <span data-lake-id="u51a465b1" id="u51a465b1">test 85</span>
+                </li>
+                <li fid="u293301df" data-lake-id="64f13addcec5855284bac375c9c01da4" id="64f13addcec5855284bac375c9c01da4" style="text-align: left">
+                  <span data-lake-id="uad5a7298" id="uad5a7298">valid 36</span>
+                </li>
+              </ol>
+            </td>
+            <td data-lake-id="uff468d3c" id="uff468d3c">
+              <ol list="u06040d38">
+                <li fid="u3254a65f" data-lake-id="ab7681bb7026d4fb908c298c88a0021a" id="ab7681bb7026d4fb908c298c88a0021a" style="text-align: left">
+                  <span data-lake-id="u517ecc78" id="u517ecc78"># 处理后（若干pkl）</span>
+                </li>
+                <li fid="u3254a65f" data-lake-id="1ec31fc57e1a81cf2e9d2e409c845e92" id="1ec31fc57e1a81cf2e9d2e409c845e92" style="text-align: left">
+                  <span data-lake-id="u80f7f777" id="u80f7f777">train 12958</span>
+                </li>
+                <li fid="u3254a65f" data-lake-id="eba576c0b40a8e1ac58f57f636a3b678" id="eba576c0b40a8e1ac58f57f636a3b678" style="text-align: left">
+                  <span data-lake-id="uf6ff55a3" id="uf6ff55a3">test -</span>
+                </li>
+                <li fid="u3254a65f" data-lake-id="6e2f12c7ffdb8f20e46986b56d569a0e" id="6e2f12c7ffdb8f20e46986b56d569a0e" style="text-align: left">
+                  <span data-lake-id="ucef4774f" id="ucef4774f">valid 85</span>
+                </li>
+              </ol>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p data-lake-id="b3de3b3623caec28f6e876f2fdf28e18" id="b3de3b3623caec28f6e876f2fdf28e18">
+        <br>
+        </p>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%E6%95%B0%E6%8D%AE%E9%9B%86%E5%88%86%E5%89%B2%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22SPLIT_NAME%20%3D%20%7B%5C%223dpw%5C%22%3A%20%7B%5C%22train%5C%22%3A%20%5C%22train%5C%22%2C%20%5C%22val%5C%22%3A%20%5C%22val%5C%22%2C%20%5C%22test%5C%22%3A%20%5C%22val%5C%22%7D%7D%20%22%2C%22autoWrap%22%3Afalse%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%E6%95%B0%E6%8D%AE%E9%9B%86%E5%88%86%E5%89%B2%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22dNMQL%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+        </card>
+        <p data-lake-id="b042bd66d6cc4f981c15c4bcbbd2cb30" id="b042bd66d6cc4f981c15c4bcbbd2cb30" style="text-align: left">
+          <strong>
+            <span style="color: #C21C13">
+              <u>
+                <span data-lake-id="ue93a9d6b" id="ue93a9d6b"># 源代码让test覆盖了val不知道是不是错误，这导致了处理后的valid有85个pkl </span>
+              </u>
+            </span>
+          </strong>
+        </p>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22if%20split%20%3D%3D%20%5C%22train%5C%22%3A%5Cn%20%20%20%20%23%20%E8%AF%BB%E5%8F%96%E8%AE%AD%E7%BB%83%E9%9B%86%E6%95%B0%E6%8D%AE%5Cn%20%20%20%20oridata%20%3D%20pkl.load(input)%5B%5C%22%7B%7D%5C%22.format(%5C%22train%5C%22)%5D%5Cn%20%20%20%20%23%20%E5%AF%B9%E5%8E%9F%E5%A7%8B%E6%95%B0%E6%8D%AE%E8%BF%9B%E8%A1%8C%E8%BD%B4%E5%90%91%E6%BB%9A%E5%8A%A8%2C%E7%94%9F%E6%88%90%E9%A2%9D%E5%A4%96%E7%9A%84%E8%AE%AD%E7%BB%83%E6%A0%B7%E6%9C%AC%5Cn%20%20%20%20p_oridata%20%3D%20np.roll(np.array(oridata)%2C%201%2C%20axis%3D1)%20%5Cn%20%20%20%20%23%20%E5%B0%86%E5%8E%9F%E5%A7%8B%E6%95%B0%E6%8D%AE%E5%92%8C%E6%BB%9A%E5%8A%A8%E5%90%8E%E7%9A%84%E6%95%B0%E6%8D%AE%E6%8B%BC%E6%8E%A5%E5%9C%A8%E4%B8%80%E8%B5%B7%5Cn%20%20%20%20self._raw_file%20%3D%20np.concatenate((oridata%2C%20p_oridata)%2C%20axis%3D0)%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22c5A9V%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+        </card>
+        <p data-lake-id="95ebfc21bfd13d6bd0cab2382f63c6c6" id="95ebfc21bfd13d6bd0cab2382f63c6c6" style="text-align: left">
+          <span data-lake-id="u779a1521" id="u779a1521" style="color: #C21C13">train的pkl=原来*2                                                       </span>
+        </p>
+        <h2 data-lake-id="EjFxw" id="EjFxw" style="text-align: left">
+          <span data-lake-id="u72bc6e2f" id="u72bc6e2f">1 介绍</span>
+        </h2>
+        <p data-lake-id="3511bd8087dbf049ddc63ae73443f205" id="3511bd8087dbf049ddc63ae73443f205" style="text-align: left">
+          <span data-lake-id="u832eeb88" id="u832eeb88">3DPW数据集（3D Poses in the Wild）是首个在野外环境中提供准确3D姿态评估的数据集。与其他户外数据集不同，3DPW数据集包含了从移动手机摄像头拍摄的视频片段。数据集包含以下内容：</span>
+        </p>
+        <ul list="u61c8fdcf">
+          <li fid="u7e96359b" data-lake-id="b3851858bed430fbad1a10e39c8ef965" id="b3851858bed430fbad1a10e39c8ef965" style="text-align: left">
+            <span data-lake-id="udc3ce899" id="udc3ce899">60个视频序列：这些视频序列展示了不同场景中的人类动作。</span>
+          </li>
+          <li fid="u7e96359b" data-lake-id="ed36295f6af300efd61973a1c85d10ab" id="ed36295f6af300efd61973a1c85d10ab" style="text-align: left">
+            <span data-lake-id="uafb7404c" id="uafb7404c">2D姿态标注：每个视频帧都包含2D姿态标注。</span>
+          </li>
+          <li fid="u7e96359b" data-lake-id="381ed22479b12be25d138b9780775ff4" id="381ed22479b12be25d138b9780775ff4" style="text-align: left">
+            <span data-lake-id="ua95658e6" id="ua95658e6">3D姿态：通过论文中介绍的方法获得的3D姿态。</span>
+          </li>
+          <li fid="u7e96359b" data-lake-id="c3ad6208685a7c2b94f1daa734303d20" id="c3ad6208685a7c2b94f1daa734303d20" style="text-align: left">
+            <span data-lake-id="ua36f4ff9" id="ua36f4ff9">相机姿态：每个视频帧的相机姿态。</span>
+          </li>
+          <li fid="u7e96359b" data-lake-id="6ac3bfddc4eef37f16989da15479e081" id="6ac3bfddc4eef37f16989da15479e081" style="text-align: left">
+            <span data-lake-id="u6b867dfa" id="u6b867dfa">3D人体扫描和3D人物模型：这些模型是可重新定位和重新塑形</span>
+          </li>
+        </ul>
+        <h2 data-lake-id="xDnaI" id="xDnaI" style="text-align: left">
+          <span data-lake-id="uaa066d0e" id="uaa066d0e">2 存储形式</span>
+        </h2>
+        <ul list="u098f35b5">
+          <li fid="u80ba0ca9" data-lake-id="25e16d9d2896fda3d64a98a86f9e8cbf" id="25e16d9d2896fda3d64a98a86f9e8cbf" style="text-align: left">
+            <span data-lake-id="ufe200c97" id="ufe200c97">以字典形式存储并封装为一个 pkl 文件，包含'train'、'test' 和 'valid' 三个键，训练集、测试集、验证集大小分别为 6479、85、36，每个键对应的值是一个列表，列表中的每个元素是一个三维数组，表示当前序列中所有智能体的姿态信息/3D 坐标</span>
+          </li>
+        </ul>
+        <h2 data-lake-id="Gtp46" id="Gtp46" style="text-align: left">
+          <span data-lake-id="u3068d983" id="u3068d983">3 构成</span>
+        </h2>
+        <ul list="uee17f27f">
+          <li fid="u74391563" data-lake-id="c7323fd5df33e0659ac6b470320d879a" id="c7323fd5df33e0659ac6b470320d879a" style="text-align: left">
+            <span data-lake-id="u1663be58" id="u1663be58">形状为(N_sequence/B, N_agents/N, T, D/JXYZ) ，值为(N_sequence, 2,30,39)</span>
+          </li>
+        </ul>
+        <ul list="uf54b7ad5" data-lake-indent="1">
+          <li fid="u821697db" data-lake-id="39fdde60dc8812894d5cf4d1bbb328ea" id="39fdde60dc8812894d5cf4d1bbb328ea" style="text-align: left">
+            <span data-lake-id="u02b356cf" id="u02b356cf">N_sequences 表示序列的数量</span>
+          </li>
+          <li fid="u821697db" data-lake-id="6a7f059d01a82ddb19f571354359d7bf" id="6a7f059d01a82ddb19f571354359d7bf" style="text-align: left">
+            <span data-lake-id="ud75771db" id="ud75771db">N_agents 表示每个序列中的智能体数量</span>
+          </li>
+          <li fid="u821697db" data-lake-id="e2cfc2d49ee17e96b2dd14d46e7653f9" id="e2cfc2d49ee17e96b2dd14d46e7653f9" style="text-align: left">
+            <span data-lake-id="u965375c5" id="u965375c5">T 表示时间步长/帧数</span>
+          </li>
+          <li fid="u821697db" data-lake-id="7697f1160b59858852cb9ceb7b33d712" id="7697f1160b59858852cb9ceb7b33d712" style="text-align: left">
+            <span data-lake-id="uec0b368e" id="uec0b368e">D/JXYZ 表示每个智能体在每个时间步/帧的特征维度/3D 坐标（</span>
+            <u>
+              <span data-lake-id="ua006bc1d" id="ua006bc1d">即关节3D坐标</span>
+            </u>
+            <span data-lake-id="uf9267035" id="uf9267035">）</span>
+          </li>
+        </ul>
+        <ul list="uf54b7ad5" data-lake-indent="2">
+          <li fid="ue416a585" data-lake-id="24af54293b6097769baa5e2446d43453" id="24af54293b6097769baa5e2446d43453" style="text-align: left">
+            <span data-lake-id="u8bd5f156" id="u8bd5f156">每个智能体的特征维度为 39，进一步可以分解为 13 个关节点，每个关节点有 3 个坐标（x, y, z）。因此，15 * 3 = 39。</span>
+          </li>
+        </ul>
+        <h2 data-lake-id="pOHqt" id="pOHqt" style="text-align: left">
+          <span data-lake-id="ubc4b3494" id="ubc4b3494">4 描述</span>
+        </h2>
+        <ul list="ucda5023e">
+          <li fid="u4a0a39ba" data-lake-id="3860ed0da436519cb83a1efd7d9a0c5d" id="3860ed0da436519cb83a1efd7d9a0c5d" style="text-align: left">
+            <span data-lake-id="u482f4bdf" id="u482f4bdf">文件包含多个序列，每个序列由多个智能体组成，每个智能体在每个时间步的特征维度为 39。</span>
+          </li>
+        </ul>
+        <h2 data-lake-id="03SlK" id="03SlK" collapsed="true" style="text-align: left">
+          <span data-lake-id="uf22db335" id="uf22db335">5 预处理</span>
+        </h2>
+        <p data-lake-id="e86612a236af98d9a5fe509a6f3bbe2d" id="e86612a236af98d9a5fe509a6f3bbe2d" style="text-align: left">
+          <span data-lake-id="uad3bbaf4" id="uad3bbaf4">3DPW 数据集的预处理由 </span>
+          <code data-lake-id="u1746d748" id="u1746d748">
+            <span data-lake-id="u1de3b4d8" id="u1de3b4d8" class="lake-fontsize-12">3dpw_hivt.py</span>
+          </code>
+          <span data-lake-id="u8cfa6f96" id="u8cfa6f96"> 脚本完成，主要包括以下步骤：</span>
+        </p>
+        <p data-lake-id="6cf84e92e77147c03f9d239497066034" id="6cf84e92e77147c03f9d239497066034" style="text-align: left">
+          <span data-lake-id="udcf2f79c" id="udcf2f79c">先设置参数</span>
+        </p>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%E9%A2%84%E5%A4%84%E7%90%86%E5%8F%82%E6%95%B0%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22spec_args%20%3D%20%7B%5Cn%20%20%20%20%5C%22dataset%5C%22%3A%20%5C%223dpw%5C%22%2C%20%20%23%20%E6%95%B0%E6%8D%AE%E9%9B%86%E5%90%8D%E7%A7%B0%5Cn%20%20%20%20%5C%22n_jobs%5C%22%3A%200%2C%20%20%23%20%E5%A4%84%E7%90%86%E6%95%B0%E6%8D%AE%E7%9A%84%E8%BF%9B%E7%A8%8B%E6%95%B0%2C0%E8%A1%A8%E7%A4%BA%E5%8D%95%E8%BF%9B%E7%A8%8B%5Cn%20%20%20%20%5C%22t_h%5C%22%3A%202%2C%20%20%23%20%E5%8E%86%E5%8F%B2%E8%BD%A8%E8%BF%B9%E9%95%BF%E5%BA%A6(%E7%A7%92)%5Cn%20%20%20%20%5C%22t_f%5C%22%3A%206%2C%20%20%23%20%E9%A2%84%E6%B5%8B%E8%BD%A8%E8%BF%B9%E9%95%BF%E5%BA%A6(%E7%A7%92)%5Cn%20%20%20%20%5C%22res%5C%22%3A%202%2C%20%20%23%20%E8%BD%A8%E8%BF%B9%E9%87%87%E6%A0%B7%E5%88%86%E8%BE%A8%E7%8E%87(Hz)%5Cn%20%20%20%20%5C%22ref_time%5C%22%3A%2010%2C%20%20%23%20%E5%8F%82%E8%80%83%E6%97%B6%E9%97%B4%E9%95%BF%E5%BA%A6(%E7%A7%92)%5Cn%20%20%20%20%5C%22lseg_len%5C%22%3A%2010%2C%20%20%23%20%E8%BD%A8%E8%BF%B9%E5%88%86%E6%AE%B5%E9%95%BF%E5%BA%A6%5Cn%20%20%20%20%5C%22lseg_angle_thres%5C%22%3A%2030%2C%20%20%23%20%E8%BD%A8%E8%BF%B9%E5%88%86%E6%AE%B5%E8%A7%92%E5%BA%A6%E9%98%88%E5%80%BC(%E5%BA%A6)%5Cn%20%20%20%20%5C%22lseg_dist_thres%5C%22%3A%202.5%2C%20%20%23%20%E8%BD%A8%E8%BF%B9%E5%88%86%E6%AE%B5%E8%B7%9D%E7%A6%BB%E9%98%88%E5%80%BC(%E7%B1%B3)%5Cn%20%20%20%20%5C%22random_flip%5C%22%3A%20True%2C%20%20%23%20%E6%98%AF%E5%90%A6%E9%9A%8F%E6%9C%BA%E7%BF%BB%E8%BD%AC%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA%5Cn%20%20%20%20%5C%22rotate%5C%22%3A%20True%2C%20%20%23%20%E6%98%AF%E5%90%A6%E8%BF%9B%E8%A1%8C%E6%97%8B%E8%BD%AC%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA%5Cn%7D%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%E9%A2%84%E5%A4%84%E7%90%86%E5%8F%82%E6%95%B0%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22bus9M%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+        </card>
+        <h3 data-lake-id="HVPFz" id="HVPFz" style="text-align: left">
+          <span data-lake-id="ua2255344" id="ua2255344">5.1</span>
+          <strong>
+            <span data-lake-id="u02152dc7" id="u02152dc7">数据加载</span>
+          </strong>
+        </h3>
+        <ul list="u241c34bc">
+          <li fid="ue8b20737" data-lake-id="ua2c08e16" id="ua2c08e16" style="text-align: left">
+            <span data-lake-id="uf4f57a0f" id="uf4f57a0f">根据训练、验证和测试集的划分，分别从指定的 .pkl 文件加载对应的数据，数据被加载为一个四维数组，形状为</span>
+            <code data-lake-id="u640a147c" id="u640a147c">
+              <span data-lake-id="u7c45b8bf" id="u7c45b8bf" class="lake-fontsize-12">(B, N, T, JXYZ)</span>
+            </code>
+            <span data-lake-id="u1b33b51c" id="u1b33b51c">，其中 </span>
+            <code data-lake-id="ub6800ddb" id="ub6800ddb">
+              <span data-lake-id="u85d087ee" id="u85d087ee" class="lake-fontsize-12">B</span>
+            </code>
+            <span data-lake-id="uc2849b68" id="uc2849b68"> 是序列数量，</span>
+            <code data-lake-id="u370e3a05" id="u370e3a05">
+              <span data-lake-id="u5fb02cb9" id="u5fb02cb9" class="lake-fontsize-12">N</span>
+            </code>
+            <span data-lake-id="uaeef96c6" id="uaeef96c6"> 是智能体数量，</span>
+            <code data-lake-id="ua8cdcb91" id="ua8cdcb91">
+              <span data-lake-id="u319ec27a" id="u319ec27a" class="lake-fontsize-12">T</span>
+            </code>
+            <span data-lake-id="u5fc1b458" id="u5fc1b458"> 是时间步长，</span>
+            <code data-lake-id="u52facae7" id="u52facae7">
+              <span data-lake-id="u182b3335" id="u182b3335" class="lake-fontsize-12">JXYZ</span>
+            </code>
+            <span data-lake-id="u0df11dfa" id="u0df11dfa"> 是关节的 3D 坐标（x, y, z）。</span>
+          </li>
+        </ul>
+        <ul list="u241c34bc" data-lake-indent="1">
+          <li fid="u7690612f" data-lake-id="f55849d168481fb8ba5b19ecfed625a2" id="f55849d168481fb8ba5b19ecfed625a2" style="text-align: left">
+            <span data-lake-id="ucc2f2dc7" id="ucc2f2dc7">对于训练集，对原始数据进行轴向滚动,生成额外的训练样本，然后将原始数据和滚动后的数据拼接在一起</span>
+          </li>
+        </ul>
+        <h3 data-lake-id="GTroj" id="GTroj" style="text-align: left">
+          <strong>
+            <span data-lake-id="u5957bdbe" id="u5957bdbe">5.2</span>
+          </strong>
+          <span data-lake-id="u4a0e229b" id="u4a0e229b">数据重塑</span>
+        </h3>
+        <ol list="u42f884aa">
+          <li fid="u06b00b1a" data-lake-id="63a0b003d3679c7a336b3c35b26a2e62" id="63a0b003d3679c7a336b3c35b26a2e62" style="text-align: left">
+            <span data-lake-id="ufc19072a" id="ufc19072a">  将JXYZ除以3得到每个关节的3D坐标 (JXYZ//3个关节,每个关节3个坐标)</span>
+          </li>
+          <li fid="u06b00b1a" data-lake-id="cb4942ec2740cbb2485c2eba084310db" id="cb4942ec2740cbb2485c2eba084310db" style="text-align: left">
+            <span data-lake-id="u59091372" id="u59091372">  重排坐标轴顺序为[z,x,y],以匹配目标坐标系</span>
+          </li>
+        </ol>
+        <p data-lake-id="60e558a0b2f0694302f11ad730df5c92" id="60e558a0b2f0694302f11ad730df5c92" style="text-align: left">
+          <span data-lake-id="ua9015f48" id="ua9015f48">最终结果维度为: [B序列数, N智能体数, T时间步, JXYZ//3关节数, 3坐标值zxy]</span>
+        </p>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22self._raw_file%20%3D%20self._raw_file.reshape((B%2C%20N%2C%20T%2C%20JXYZ%2F%2F3%2C%203))%5B...%2C%20%5B2%2C0%2C1%5D%5D%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22unWpv%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+        </card>
+        <h3 data-lake-id="pKwlQ" id="pKwlQ" style="text-align: left">
+          <span data-lake-id="uf58527bd" id="uf58527bd">5.3 </span>
+          <strong>
+            <span data-lake-id="uefcf4337" id="uefcf4337">多进程处理</span>
+          </strong>
+        </h3>
+        <p data-lake-id="fcf09c21b57c15d419a9a6f268b34199" id="fcf09c21b57c15d419a9a6f268b34199" style="text-align: left">
+          <span data-lake-id="u91ab0cf2" id="u91ab0cf2">如果设置了多个工作进程（n_jobs大于1），使用多进程并行处理数据。每个进程处理一部分数据，最后将结果合并。</span>
+        </p>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22procs%20%3D%20%5B%5D%5Cnfor%20proc_id%20in%20range(self.n_jobs)%3A%5Cn%20%20%20%20process%20%3D%20Process(target%3Dself.process_3dpw%2C%20args%3D(raw_file_list%5Bproc_id%5D%2Cself._local_radius))%5Cn%20%20%20%20process.daemon%20%3D%20True%5Cn%20%20%20%20process.start()%5Cn%20%20%20%20procs.append(process)%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22N6xDk%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+        </card>
+        <h3 data-lake-id="DH0a2" id="DH0a2" style="text-align: left">
+          <span data-lake-id="u10bfa864" id="u10bfa864">5.4 数据处理</span>
+        </h3>
+        <ul list="uea6488fa">
+          <li fid="u404a0fd4" data-lake-id="51d1064a6ad3cbee4a684373599f4ba1" id="51d1064a6ad3cbee4a684373599f4ba1" style="text-align: left">
+            <span data-lake-id="u43b4d9cb" id="u43b4d9cb">提取输入和输出轨迹：输入轨迹为每个智能体在输入时间步里第一个关节点的坐标变化，输出轨迹为每个智能体在后续帧/时间步里第一个关节点的坐标变化</span>
+          </li>
+          <li fid="u404a0fd4" data-lake-id="ed2482ca95650849cdf6e81f55b27bc4" id="ed2482ca95650849cdf6e81f55b27bc4" style="text-align: left">
+            <span data-lake-id="u8da78046" id="u8da78046">位移计算：通过计算相邻时间步之间的差值，生成新的轨迹数据</span>
+          </li>
+          <li fid="u404a0fd4" data-lake-id="c90acb4af2e4c3793347edf62dcae6b7" id="c90acb4af2e4c3793347edf62dcae6b7" style="text-align: left">
+            <strong>
+              <span data-lake-id="u59d0e740" id="u59d0e740">创建掩码矩阵</span>
+            </strong>
+          </li>
+        </ul>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22padding_mask%20%3D%20torch.zeros(N%2C%20T%2C%20dtype%3Dtorch.bool)%5Cnbos_mask%20%3D%20torch.zeros(N%2C%20self.ref_time%2C%20dtype%3Dtorch.bool).cuda()%5Cnbos_mask%5B%3A%2C%200%5D%20%3D%20~padding_mask%5B%3A%2C%200%5D%5Cnbos_mask%5B%3A%2C%201%20%3A%20self.ref_time%5D%20%3D%20(%5Cn%20%20%20%20padding_mask%5B%3A%2C%20%3A%20self.ref_time%20-%201%5D%5Cn%20%20%20%20%26%20~padding_mask%5B%3A%2C%201%20%3A%20self.ref_time%5D%5Cn)%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22AAefp%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+        </card>
+        <details data-lake-id="u91ac2694" id="u91ac2694" open="false" class="lake-collapse">
+          <summary data-lake-id="u68046643" id="u68046643" class="lake-summary">
+            <span data-lake-id="u6d262d73" id="u6d262d73"> 代码详解</span>
+          </summary>
+          <p data-lake-id="u4f2ac530" id="u4f2ac530">
+            <span data-lake-id="ub3faa804" id="ub3faa804">在您提供的代码片段中，主要涉及到两个掩码的计算：</span>
+            <code data-lake-id="ubad81990" id="ubad81990">
+              <span data-lake-id="ufe0398b5" id="ufe0398b5">padding_mask</span>
+            </code>
+            <span data-lake-id="u09ac50dd" id="u09ac50dd">和</span>
+            <code data-lake-id="u2442d75c" id="u2442d75c">
+              <span data-lake-id="udc582d3d" id="udc582d3d">bos_mask</span>
+            </code>
+            <span data-lake-id="u28ec568f" id="u28ec568f">。以下是对这段代码的详细解释：</span>
+          </p>
+          <h3 data-lake-id="alIDv" id="alIDv">
+            <span data-lake-id="u8b0f4cdd" id="u8b0f4cdd">1. </span>
+            <code data-lake-id="u681a31cf" id="u681a31cf">
+              <span data-lake-id="u4bff4d69" id="u4bff4d69">padding_mask</span>
+            </code>
+            <span data-lake-id="u1d1265b7" id="u1d1265b7">的计算</span>
+          </h3>
+          <ul list="ud607012c">
+            <li fid="ubc4d7f64" data-lake-id="ub97721d6" id="ub97721d6">
+              <code data-lake-id="ude05c8a5" id="ude05c8a5">
+                <span data-lake-id="ub505a232" id="ub505a232">padding_mask</span>
+              </code>
+              <span data-lake-id="ue3897464" id="ue3897464">是一个形状为 </span>
+              <span data-lake-id="ua0d110b2" id="ua0d110b2">(</span>
+              <span data-lake-id="udcb8e137" id="udcb8e137">(N, T)</span>
+              <span data-lake-id="uf3428622" id="uf3428622">)</span>
+              <span data-lake-id="u8b6c5cd2" id="u8b6c5cd2"> 的布尔张量，初始化为全零（即全为</span>
+              <code data-lake-id="u23f18d4c" id="u23f18d4c">
+                <span data-lake-id="u7adf82a9" id="u7adf82a9">False</span>
+              </code>
+              <span data-lake-id="ue5a841b4" id="ue5a841b4">）。</span>
+            </li>
+            <li fid="ubc4d7f64" data-lake-id="uc040abff" id="uc040abff">
+              <span data-lake-id="u23a31e6a" id="u23a31e6a">这里的</span>
+              <code data-lake-id="u343bed8f" id="u343bed8f">
+                <span data-lake-id="uae1f0cba" id="uae1f0cba">N</span>
+              </code>
+              <span data-lake-id="ufdec3ae6" id="ufdec3ae6">表示智能体的数量，</span>
+              <code data-lake-id="u94c0a29e" id="u94c0a29e">
+                <span data-lake-id="u56c32125" id="u56c32125">T</span>
+              </code>
+              <span data-lake-id="uf04135d5" id="uf04135d5">表示时间步的数量。</span>
+            </li>
+            <li fid="ubc4d7f64" data-lake-id="u1a44814e" id="u1a44814e">
+              <span data-lake-id="u52f81fe8" id="u52f81fe8">这个掩码通常用于指示哪些时间步是有效的（即有数据的），哪些是填充的（即没有数据的）。在初始化时，所有的时间步都被视为无效。</span>
+            </li>
+          </ul>
+          <h3 data-lake-id="FF9CW" id="FF9CW">
+            <span data-lake-id="u987b2cb4" id="u987b2cb4">2. </span>
+            <code data-lake-id="u212ad3c4" id="u212ad3c4">
+              <span data-lake-id="uf94d2287" id="uf94d2287">bos_mask</span>
+            </code>
+            <span data-lake-id="u5b99eb29" id="u5b99eb29">的计算</span>
+          </h3>
+          <ul list="u23d6be5f">
+            <li fid="ud35f3367" data-lake-id="u78710ab0" id="u78710ab0">
+              <code data-lake-id="u8edd0cfb" id="u8edd0cfb">
+                <span data-lake-id="u5222cbc0" id="u5222cbc0">bos_mask</span>
+              </code>
+              <span data-lake-id="u3af25d86" id="u3af25d86">是一个形状为 </span>
+              <span data-lake-id="u7348ed43" id="u7348ed43">(</span>
+              <span data-lake-id="u912c52d2" id="u912c52d2">(N, \text{self.ref_time})</span>
+              <span data-lake-id="u4227538d" id="u4227538d">)</span>
+              <span data-lake-id="u49fefa0d" id="u49fefa0d"> 的布尔张量，初始化为全零（即全为</span>
+              <code data-lake-id="uabddd522" id="uabddd522">
+                <span data-lake-id="u39387e14" id="u39387e14">False</span>
+              </code>
+              <span data-lake-id="u807da221" id="u807da221">）。</span>
+            </li>
+            <li fid="ud35f3367" data-lake-id="uf17ce1a5" id="uf17ce1a5">
+              <code data-lake-id="ue338c241" id="ue338c241">
+                <span data-lake-id="u1b91949e" id="u1b91949e">bos_mask</span>
+              </code>
+              <span data-lake-id="u8932f141" id="u8932f141">的作用是标记序列的开始（Beginning Of Sequence）位置。</span>
+            </li>
+          </ul>
+          <h4 data-lake-id="Sjq2Z" id="Sjq2Z">
+            <span data-lake-id="u1e34936f" id="u1e34936f">具体计算过程：</span>
+          </h4>
+          <ul list="u35494cbb">
+            <li fid="uf51cd1bb" data-lake-id="ufcf57390" id="ufcf57390">
+              <code data-lake-id="u2549f8b5" id="u2549f8b5">
+                <span data-lake-id="ucce3a813" id="ucce3a813">bos_mask[:, 0] = ~padding_mask[:, 0]</span>
+              </code>
+              <span data-lake-id="uf0d9eb75" id="uf0d9eb75">：</span>
+            </li>
+          </ul>
+          <ul list="u35494cbb" data-lake-indent="1">
+            <li fid="u88b0d38d" data-lake-id="u4899e45a" id="u4899e45a">
+              <span data-lake-id="u01352363" id="u01352363">这行代码将</span>
+              <code data-lake-id="u63ac577f" id="u63ac577f">
+                <span data-lake-id="u6e8d025a" id="u6e8d025a">bos_mask</span>
+              </code>
+              <span data-lake-id="uc7541358" id="uc7541358">的第一列设置为</span>
+              <code data-lake-id="u0fc2c8c6" id="u0fc2c8c6">
+                <span data-lake-id="u1d8da093" id="u1d8da093">padding_mask</span>
+              </code>
+              <span data-lake-id="ud3e0fd11" id="ud3e0fd11">第一列的反转（即如果</span>
+              <code data-lake-id="u86604617" id="u86604617">
+                <span data-lake-id="u924b39e4" id="u924b39e4">padding_mask</span>
+              </code>
+              <span data-lake-id="u714b8c3d" id="u714b8c3d">的第一列为</span>
+              <code data-lake-id="ue83b6d13" id="ue83b6d13">
+                <span data-lake-id="u7c3b0227" id="u7c3b0227">False</span>
+              </code>
+              <span data-lake-id="u36ae74a5" id="u36ae74a5">，则</span>
+              <code data-lake-id="u0c61af2a" id="u0c61af2a">
+                <span data-lake-id="uf5321f74" id="uf5321f74">bos_mask</span>
+              </code>
+              <span data-lake-id="u0782626f" id="u0782626f">的第一列为</span>
+              <code data-lake-id="u838dcaaf" id="u838dcaaf">
+                <span data-lake-id="ud58a5f1d" id="ud58a5f1d">True</span>
+              </code>
+              <span data-lake-id="ub2e77598" id="ub2e77598">，反之亦然）。</span>
+            </li>
+            <li fid="u88b0d38d" data-lake-id="u47c18dd5" id="u47c18dd5">
+              <span data-lake-id="u2d59bdac" id="u2d59bdac">这意味着如果第一个时间步没有填充（有效），则</span>
+              <code data-lake-id="u7ffd4913" id="u7ffd4913">
+                <span data-lake-id="u4dd19faf" id="u4dd19faf">bos_mask</span>
+              </code>
+              <span data-lake-id="u17e7ba29" id="u17e7ba29">的第一个时间步被标记为开始位置。</span>
+            </li>
+          </ul>
+          <ul list="u35494cbb" start="2">
+            <li fid="uf51cd1bb" data-lake-id="u7e027b55" id="u7e027b55">
+              <code data-lake-id="u612c4872" id="u612c4872">
+                <span data-lake-id="u3220b4f3" id="u3220b4f3">bos_mask[:, 1 : self.ref_time] = (padding_mask[:, : self.ref_time - 1] &amp; ~padding_mask[:, 1 : self.ref_time])</span>
+              </code>
+              <span data-lake-id="uf4c5dc79" id="uf4c5dc79">：</span>
+            </li>
+          </ul>
+          <ul list="u35494cbb" data-lake-indent="1">
+            <li fid="u2d21aa84" data-lake-id="u37dc960c" id="u37dc960c">
+              <span data-lake-id="u8108d0a8" id="u8108d0a8">这行代码计算</span>
+              <code data-lake-id="ua0075900" id="ua0075900">
+                <span data-lake-id="udc31734d" id="udc31734d">bos_mask</span>
+              </code>
+              <span data-lake-id="u2b82c5d6" id="u2b82c5d6">的后续时间步。</span>
+            </li>
+            <li fid="u2d21aa84" data-lake-id="ueb5b8e65" id="ueb5b8e65">
+              <code data-lake-id="u852d7155" id="u852d7155">
+                <span data-lake-id="u98f5f45f" id="u98f5f45f">padding_mask[:, : self.ref_time - 1]</span>
+              </code>
+              <span data-lake-id="u73afec43" id="u73afec43">表示从第一个时间步到倒数第二个时间步的有效性。</span>
+            </li>
+            <li fid="u2d21aa84" data-lake-id="ufca50581" id="ufca50581">
+              <code data-lake-id="u0a196ce5" id="u0a196ce5">
+                <span data-lake-id="uca5b535a" id="uca5b535a">~padding_mask[:, 1 : self.ref_time]</span>
+              </code>
+              <span data-lake-id="uad1ee901" id="uad1ee901">表示从第二个时间步到最后一个时间步的反转（即标记哪些时间步是有效的）。</span>
+            </li>
+            <li fid="u2d21aa84" data-lake-id="u66e26df0" id="u66e26df0">
+              <span data-lake-id="u89c11c74" id="u89c11c74">通过按位与操作（</span>
+              <code data-lake-id="u0243b77f" id="u0243b77f">
+                <span data-lake-id="udc67e58e" id="udc67e58e">&amp;</span>
+              </code>
+              <span data-lake-id="u354edc67" id="u354edc67">），</span>
+              <code data-lake-id="u7a436a7a" id="u7a436a7a">
+                <span data-lake-id="u4220df7e" id="u4220df7e">bos_mask</span>
+              </code>
+              <span data-lake-id="ub8bb3b5a" id="ub8bb3b5a">的后续时间步被标记为有效的开始位置，只有在前一个时间步有效且当前时间步无效的情况下，才会被标记为</span>
+              <code data-lake-id="u4b320444" id="u4b320444">
+                <span data-lake-id="u4e12df97" id="u4e12df97">True</span>
+              </code>
+              <span data-lake-id="ucf8d8dc7" id="ucf8d8dc7">。</span>
+            </li>
+          </ul>
+          <h3 data-lake-id="COovG" id="COovG">
+            <span data-lake-id="ub094b5c5" id="ub094b5c5">总结</span>
+          </h3>
+          <ul list="uf9119c67">
+            <li fid="ud9ab0adf" data-lake-id="u07936101" id="u07936101">
+              <code data-lake-id="u14e992c0" id="u14e992c0">
+                <span data-lake-id="u507cc6fa" id="u507cc6fa">padding_mask</span>
+              </code>
+              <span data-lake-id="u5269c046" id="u5269c046">用于指示时间步的有效性。</span>
+            </li>
+            <li fid="ud9ab0adf" data-lake-id="u5b575293" id="u5b575293">
+              <code data-lake-id="u98165ce9" id="u98165ce9">
+                <span data-lake-id="u5a2efa5e" id="u5a2efa5e">bos_mask</span>
+              </code>
+              <span data-lake-id="u883b678b" id="u883b678b">用于标记序列的开始位置，帮助模型在处理序列时识别有效的起始点。这在序列建模和时间序列预测中是非常重要的，尤其是在处理变长序列时。</span>
+            </li>
+          </ul>
+          <ul list="ue8aa8cc6">
+            <li fid="u14abecca" data-lake-id="u5fbfe1f0" id="u5fbfe1f0" style="text-align: left">
+              <span data-lake-id="ue7a900ab" id="ue7a900ab">计算每个智能体的旋转角度，并根据这些角度生成旋转矩阵,然后应用旋转</span>
+            </li>
+          </ul>
+        </details>
+        <ul list="u22e22386">
+          <li fid="ubbd055e7" data-lake-id="ueb0be044" id="ueb0be044" style="text-align: left">
+            <span data-lake-id="ued302163" id="ued302163">计算每个智能体的旋转角度，并根据这些角度生成旋转矩阵,然后应用旋转</span>
+          </li>
+        </ul>
+        <details data-lake-id="u99fe4c7f" id="u99fe4c7f" open="false" class="lake-collapse">
+          <summary data-lake-id="u68764cb4" id="u68764cb4" class="lake-summary">
+            <span data-lake-id="u74e7770e" id="u74e7770e">代码详解</span>
+          </summary>
+          <p data-lake-id="u510cd810" id="u510cd810">
+            <span data-lake-id="u2806b028" id="u2806b028">这段代码主要用于计算每个智能体的旋转角度，并根据这些角度生成旋转矩阵。以下是对代码的详细解释：</span>
+          </p>
+          <h3 data-lake-id="wDR16" id="wDR16">
+            <span data-lake-id="u2199a6c7" id="u2199a6c7">1. 初始化旋转角度</span>
+          </h3>
+          <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22rotate_angles%20%3D%20torch.zeros(N%2C%20dtype%3Dtorch.float)%22%2C%22autoWrap%22%3Afalse%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Atrue%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22id%22%3A%22ws01e%22%7D">
+          </card>
+          <ul list="u8f33078a">
+            <li fid="ubf72c6f3" data-lake-id="u76196920" id="u76196920">
+              <span data-lake-id="uaa17da5d" id="uaa17da5d">创建一个长度为 </span>
+              <span data-lake-id="ue26f538b" id="ue26f538b">(</span>
+              <span data-lake-id="ucfbfc82a" id="ucfbfc82a">N</span>
+              <span data-lake-id="ud89c737e" id="ud89c737e">)</span>
+              <span data-lake-id="ufbcc52c3" id="ufbcc52c3"> 的张量 </span>
+              <code data-lake-id="uac43c1f1" id="uac43c1f1">
+                <span data-lake-id="uc6a8532c" id="uc6a8532c">rotate_angles</span>
+              </code>
+              <span data-lake-id="ue24df05d" id="ue24df05d">，用于存储每个智能体的旋转角度，初始化为零。</span>
+            </li>
+          </ul>
+          <h3 data-lake-id="SRQsA" id="SRQsA">
+            <span data-lake-id="uf9d41901" id="uf9d41901">2. 计算旋转角度</span>
+          </h3>
+          <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22for%20actor_id%20in%20range(N)%3A%5Cn%20%20%20%20heading_vector%20%3D%20(%5Cn%20%20%20%20%20%20%20%20x%5Bactor_id%2C%20self.ref_time%5D%20-%20x%5Bactor_id%2C%20self.ref_time%20-%201%5D%5Cn%20%20%20%20)%5Cn%20%20%20%20rotate_angles%5Bactor_id%5D%20%3D%20torch.atan2(%5Cn%20%20%20%20%20%20%20%20heading_vector%5B1%5D%2C%20heading_vector%5B0%5D%5Cn%20%20%20%20)%22%2C%22autoWrap%22%3Afalse%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Atrue%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22id%22%3A%22j1AqA%22%7D">
+          </card>
+          <ul list="ua3cd8a16">
+            <li fid="ua7d0a8c8" data-lake-id="u818fade9" id="u818fade9">
+              <span data-lake-id="u7434b37a" id="u7434b37a">对于每个智能体（</span>
+              <code data-lake-id="ub855fe73" id="ub855fe73">
+                <span data-lake-id="ub225ab67" id="ub225ab67">actor_id</span>
+              </code>
+              <span data-lake-id="ude40deaf" id="ude40deaf">），计算其在参考时间步（</span>
+              <code data-lake-id="u54df409c" id="u54df409c">
+                <span data-lake-id="u1997fc5b" id="u1997fc5b">self.ref_time</span>
+              </code>
+              <span data-lake-id="u6166a4f3" id="u6166a4f3">）和前一个时间步（</span>
+              <code data-lake-id="uc1e13eeb" id="uc1e13eeb">
+                <span data-lake-id="uffbf051d" id="uffbf051d">self.ref_time - 1</span>
+              </code>
+              <span data-lake-id="ub9d67e8e" id="ub9d67e8e">）之间的方向向量（</span>
+              <code data-lake-id="u430ff622" id="u430ff622">
+                <span data-lake-id="u60a61772" id="u60a61772">heading_vector</span>
+              </code>
+              <span data-lake-id="ub1cc86c4" id="ub1cc86c4">）。</span>
+            </li>
+            <li fid="ua7d0a8c8" data-lake-id="u4b1580cf" id="u4b1580cf">
+              <code data-lake-id="u9828f11e" id="u9828f11e">
+                <span data-lake-id="u55ddc339" id="u55ddc339">heading_vector</span>
+              </code>
+              <span data-lake-id="u8a0d02b0" id="u8a0d02b0">表示智能体在这两个时间步之间的位移。</span>
+            </li>
+            <li fid="ua7d0a8c8" data-lake-id="u6659bf54" id="u6659bf54">
+              <span data-lake-id="u7c202574" id="u7c202574">使用</span>
+              <code data-lake-id="ua99c940d" id="ua99c940d">
+                <span data-lake-id="ucdab529f" id="ucdab529f">torch.atan2</span>
+              </code>
+              <span data-lake-id="ubdf92347" id="ubdf92347">函数计算该向量的旋转角度，结果存储在</span>
+              <code data-lake-id="u06dceda8" id="u06dceda8">
+                <span data-lake-id="u362c5d22" id="u362c5d22">rotate_angles</span>
+              </code>
+              <span data-lake-id="uc18ecaa9" id="uc18ecaa9">中。</span>
+              <code data-lake-id="uad6cf592" id="uad6cf592">
+                <span data-lake-id="u88b2bfd0" id="u88b2bfd0">atan2</span>
+              </code>
+              <span data-lake-id="ub128e8a7" id="ub128e8a7">函数的参数是向量的 </span>
+              <span data-lake-id="uc5ec1607" id="uc5ec1607">(</span>
+              <span data-lake-id="ued0ab21a" id="ued0ab21a">y</span>
+              <span data-lake-id="u85907e8b" id="u85907e8b">)</span>
+              <span data-lake-id="u1af53be9" id="u1af53be9"> 和 </span>
+              <span data-lake-id="u33a1491e" id="u33a1491e">(</span>
+              <span data-lake-id="u7f91610a" id="u7f91610a">x</span>
+              <span data-lake-id="u587be4c7" id="u587be4c7">)</span>
+              <span data-lake-id="u8264ae24" id="u8264ae24"> 分量，返回的是从 </span>
+              <span data-lake-id="u7d365786" id="u7d365786">(</span>
+              <span data-lake-id="u2096dd52" id="u2096dd52">x</span>
+              <span data-lake-id="u51cf1af2" id="u51cf1af2">)</span>
+              <span data-lake-id="ufecfd877" id="ufecfd877"> 轴到该向量的角度（弧度）。</span>
+            </li>
+          </ul>
+          <h3 data-lake-id="d1MYV" id="d1MYV">
+            <span data-lake-id="u68f4cda4" id="u68f4cda4">3. 生成旋转矩阵</span>
+          </h3>
+          <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22if%20self.rotate%3A%5Cn%20%20%20%20rotate_mat%20%3D%20torch.empty(N%2C%203%2C%203)%5Cn%20%20%20%20sin_vals%20%3D%20torch.sin(rotate_angles)%5Cn%20%20%20%20cos_vals%20%3D%20torch.cos(rotate_angles)%5Cn%20%20%20%20rotate_mat%5B%3A%2C%200%2C%200%5D%20%3D%20cos_vals%5Cn%20%20%20%20rotate_mat%5B%3A%2C%200%2C%201%5D%20%3D%20-sin_vals%5Cn%20%20%20%20rotate_mat%5B%3A%2C%200%2C%202%5D%20%3D%200%5Cn%20%20%20%20rotate_mat%5B%3A%2C%201%2C%200%5D%20%3D%20sin_vals%5Cn%20%20%20%20rotate_mat%5B%3A%2C%201%2C%201%5D%20%3D%20cos_vals%5Cn%20%20%20%20rotate_mat%5B%3A%2C%201%2C%202%5D%20%3D%200%5Cn%20%20%20%20rotate_mat%5B%3A%2C%202%2C%200%5D%20%3D%200%5Cn%20%20%20%20rotate_mat%5B%3A%2C%202%2C%201%5D%20%3D%200%5Cn%20%20%20%20rotate_mat%5B%3A%2C%202%2C%202%5D%20%3D%201%22%2C%22autoWrap%22%3Afalse%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Atrue%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22id%22%3A%22YesjH%22%7D">
+          </card>
+          <ul list="ue2ef572b">
+            <li fid="u4f6224ac" data-lake-id="u911a4f47" id="u911a4f47">
+              <span data-lake-id="ue3109a99" id="ue3109a99">如果</span>
+              <code data-lake-id="u262a077a" id="u262a077a">
+                <span data-lake-id="uebaff5eb" id="uebaff5eb">self.rotate</span>
+              </code>
+              <span data-lake-id="u0ff6a71c" id="u0ff6a71c">为</span>
+              <code data-lake-id="ud7f24063" id="ud7f24063">
+                <span data-lake-id="u0db6e908" id="u0db6e908">True</span>
+              </code>
+              <span data-lake-id="u4dac8265" id="u4dac8265">，则创建一个形状为 </span>
+              <span data-lake-id="uf76ec973" id="uf76ec973">(</span>
+              <span data-lake-id="u7e5e6acb" id="u7e5e6acb">(N, 3, 3)</span>
+              <span data-lake-id="u5aba6e30" id="u5aba6e30">)</span>
+              <span data-lake-id="u0bf362da" id="u0bf362da"> 的张量 </span>
+              <code data-lake-id="ubb26fe91" id="ubb26fe91">
+                <span data-lake-id="u220d830e" id="u220d830e">rotate_mat</span>
+              </code>
+              <span data-lake-id="u992b87bc" id="u992b87bc">，用于存储每个智能体的旋转矩阵。</span>
+            </li>
+            <li fid="u4f6224ac" data-lake-id="u38c0b204" id="u38c0b204">
+              <span data-lake-id="u1101904f" id="u1101904f">计算每个智能体的旋转角度的正弦和余弦值，并填充到旋转矩阵中。旋转矩阵的形式如下：</span>
+            </li>
+          </ul>
+          <p data-lake-id="u86d1b73b" id="u86d1b73b">
+            <card type="inline" name="math" value="data:%7B%22code%22%3A%22%5C%5Cleft%5B%5C%5Cbegin%7Barray%7D%7Bccc%7D%5C%5Ccos%20(%5C%5Ctheta)%20%26%20-%5C%5Csin%20(%5C%5Ctheta)%20%26%200%20%5C%5C%5C%5C%5C%5Csin%20(%5C%5Ctheta)%20%26%20%5C%5Ccos%20(%5C%5Ctheta)%20%26%200%20%5C%5C%5C%5C0%20%26%200%20%26%201%5C%5Cend%7Barray%7D%5C%5Cright%5D%22%2C%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F__latex%2Fdbe1ad1c0828a494236ec62fbdec5cd6.svg%22%2C%22id%22%3A%22u8HOV%22%7D">
+            </card>
+          </p>
+          <p data-lake-id="u763f5d34" id="u763f5d34">
+            <span data-lake-id="ue443d31b" id="ue443d31b">其中</span>
+            <card type="inline" name="math" value="data:%7B%22code%22%3A%22%5C%5Ctheta%22%2C%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F__latex%2Fed5a4aa5e092e303a69c608582c70db9.svg%22%2C%22id%22%3A%22hu117%22%7D">
+            </card>
+            <span data-lake-id="uc09cd424" id="uc09cd424"> 是旋转角度。</span>
+          </p>
+          <h3 data-lake-id="NvKVG" id="NvKVG">
+            <span data-lake-id="u3b833769" id="u3b833769">4. 应用旋转矩阵</span>
+          </h3>
+          <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22if%20y%20is%20not%20None%3A%5Cn%20%20%20%20y%20%3D%20torch.bmm(y%2C%20rotate_mat)%22%2C%22autoWrap%22%3Afalse%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Atrue%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22id%22%3A%22DXNHy%22%7D">
+          </card>
+          <ul list="u0bf7b28e">
+            <li fid="u5e0be63b" data-lake-id="ud2904de3" id="ud2904de3">
+              <span data-lake-id="u14352ce7" id="u14352ce7">如果 </span>
+              <code data-lake-id="u8fd929cb" id="u8fd929cb">
+                <span data-lake-id="u91c2e296" id="u91c2e296">y</span>
+              </code>
+              <span data-lake-id="ucee89cc3" id="ucee89cc3"> 不为 </span>
+              <code data-lake-id="u6dbdcc8d" id="u6dbdcc8d">
+                <span data-lake-id="u108984fa" id="u108984fa">None</span>
+              </code>
+              <span data-lake-id="u633aa320" id="u633aa320">，则使用批量矩阵乘法（</span>
+              <code data-lake-id="ub524c3b4" id="ub524c3b4">
+                <span data-lake-id="ud367598a" id="ud367598a">torch.bmm</span>
+              </code>
+              <span data-lake-id="uf0cfdb62" id="uf0cfdb62">）将旋转矩阵应用于 </span>
+              <code data-lake-id="ue7743456" id="ue7743456">
+                <span data-lake-id="u0879db00" id="u0879db00">y</span>
+              </code>
+              <span data-lake-id="u3eeace04" id="u3eeace04">。这通常用于将预测的轨迹或位置数据进行旋转，以匹配新的坐标系。</span>
+            </li>
+          </ul>
+          <h3 data-lake-id="j5dln" id="j5dln">
+            <span data-lake-id="u767ffa1d" id="u767ffa1d">5. 旋转矩阵的作用</span>
+          </h3>
+          <ul list="ud14375b7">
+            <li fid="u04061ade" data-lake-id="uff5a2c57" id="uff5a2c57">
+              <span data-lake-id="u0f0e07bf" id="u0f0e07bf">旋转矩阵用于将智能体的运动轨迹从一个坐标系转换到另一个坐标系，通常是为了对齐或标准化数据，以便于后续的处理或分析。</span>
+            </li>
+          </ul>
+          <h3 data-lake-id="aPnb0" id="aPnb0">
+            <span data-lake-id="uf5ec0bbe" id="uf5ec0bbe">总结</span>
+          </h3>
+          <p data-lake-id="uf95e2fae" id="uf95e2fae">
+            <span data-lake-id="u5b06201b" id="u5b06201b">这段代码的主要目的是计算每个智能体的旋转角度，并生成相应的旋转矩阵，以便在需要时对运动轨迹进行旋转处理。这在处理3D运动数据时非常重要，尤其是在需要对不同坐标系进行对齐的情况下。</span>
+          </p>
+        </details>
+        <ul list="udc7b631e">
+          <li fid="u27d350b9" data-lake-id="ua3d5ed63" id="ua3d5ed63" style="text-align: left">
+            <span data-lake-id="u927697de" id="u927697de" style="color: #C21C13">整理并保存处理后的数据（.pt格式），构成如下：</span>
+          </li>
+        </ul>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22.pt%E6%A0%BC%E5%BC%8F%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%5C%22%5C%22%5C%22%5CnN%20%3D%202%5CnT%3A%20%E6%97%B6%E9%97%B4%E6%AD%A5%E9%95%BF%3Dinput_time%2Boutput_time%3D30%3B%20ref_time%3Dinput_time%3D10%5CnJ%20%3D%2013%5Cn3%20%3D%20%E5%9D%90%E6%A0%87%E5%80%BCzxy%5Cn%5C%22%5C%22%5C%22%5Cn%23%20%E5%B0%86%E5%A4%84%E7%90%86%E5%90%8E%E7%9A%84%E6%95%B0%E6%8D%AE%E6%95%B4%E7%90%86%E6%88%90%E5%AD%97%E5%85%B8%2C%E5%8C%85%E5%90%AB%E4%BB%A5%E4%B8%8B%E5%AD%97%E6%AE%B5%3A%5Cn%23%20body_xyz%3A%20%E4%BA%BA%E4%BD%93%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%8E%9F%E5%A7%8B3D%E5%9D%90%E6%A0%87%E5%BA%8F%E5%88%97%20%5BN%2C%20T%2C%20J%2C%203%5D%5Cn%23%20x%3A%20%E5%8F%82%E8%80%83%E5%B8%A7%E4%B9%8B%E5%89%8D%E7%9A%84%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%A7%BB%E5%BA%8F%E5%88%97%20%5BN%2C%20ref_time%2C%203%5D%5Cn%23%20positions%3A%20%E6%89%80%E6%9C%89%E5%B8%A7%E7%9A%84%E7%BB%9D%E5%AF%B9%E4%BD%8D%E7%BD%AE%E5%BA%8F%E5%88%97%2F%E8%BD%A8%E8%BF%B9%20%5BN%2C%20T%2C%203%5D%5Cn%23%20rotate_angles%3A%20%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E6%97%8B%E8%BD%AC%E8%A7%92%E5%BA%A6%20%5BN%5D%5Cn%23%20padding_mask%3A%20%E6%97%B6%E5%BA%8F%E6%95%B0%E6%8D%AE%E7%9A%84padding%E6%8E%A9%E7%A0%81%20%5BN%2C%20T%5D%5Cn%23%20edge_index%3A%20%E5%9B%BE%E7%BB%93%E6%9E%84%E7%9A%84%E8%BE%B9%E8%BF%9E%E6%8E%A5%E5%85%B3%E7%B3%BB%20%5B2%2C%20num_edges%5D%5Cn%23%20bos_mask%3A%20%E5%BA%8F%E5%88%97%E8%B5%B7%E5%A7%8B%E4%BD%8D%E7%BD%AE%E7%9A%84%E6%8E%A9%E7%A0%81%20%5BN%2C%20ref_time%5D%5Cn%23%20y%3A%20%E5%8F%82%E8%80%83%E5%B8%A7%E4%B9%8B%E5%90%8E%E7%9A%84%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%A7%BB%E5%BA%8F%E5%88%97%20%5BN%2C%20T-ref_time%2C%203%5D%5Cn%23%20num_nodes%3A%20%E5%9C%BA%E6%99%AF%E4%B8%ADactor%E7%9A%84%E6%95%B0%E9%87%8F%20N%5Cn%23%20rotate_mat%3A%20%E6%AF%8F%E4%B8%AAactor%E7%9A%84%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5%20%5BN%2C%203%2C%203%5D%5Cnprocessed%20%3D%20%7B%5Cn%20%20%20%20%5C%22body_xyz%5C%22%3A%20body_xyz%2C%5Cn%20%20%20%20%5C%22x%5C%22%3A%20x%5B%3A%2C%20%3A%20self.ref_time%5D%2C%5Cn%20%20%20%20%5C%22positions%5C%22%3A%20positions%2C%5Cn%20%20%20%20%5C%22rotate_angles%5C%22%3A%20rotate_angles%2C%5Cn%20%20%20%20%5C%22padding_mask%5C%22%3A%20padding_mask%2C%5Cn%20%20%20%20%5C%22edge_index%5C%22%3A%20edge_index%2C%5Cn%20%20%20%20%5C%22bos_mask%5C%22%3A%20bos_mask%2C%5Cn%20%20%20%20%5C%22y%5C%22%3A%20y%2C%5Cn%20%20%20%20%5C%22num_nodes%5C%22%3A%20N%2C%5Cn%20%20%20%20%5C%22rotate_mat%5C%22%3A%20rotate_mat%2C%5Cn%7D%5Cn%23%20%E5%B0%86%E5%AD%97%E5%85%B8%E8%BD%AC%E6%8D%A2%E4%B8%BATemporalData%E5%AF%B9%E8%B1%A1%E5%B9%B6%E4%BF%9D%E5%AD%98%E4%B8%BApt%E6%96%87%E4%BB%B6%5Cndata%20%3D%20TemporalData(**processed)%5Cntorch.save(data%2C%20os.path.join(self.processed_dir%2C%20str(token)%20%2B%20%5C%22.pt%5C%22))%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22.pt%E6%A0%BC%E5%BC%8F%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22MsurP%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+        </card>
+        <h3 data-lake-id="x4hPA" id="x4hPA" style="text-align: left">
+          <span data-lake-id="ub2f6b2be" id="ub2f6b2be">5.5 </span>
+          <strong>
+            <span data-lake-id="ue5d83f0e" id="ue5d83f0e">数据增强（仅训练集）</span>
+          </strong>
+        </h3>
+        <ul list="u1e121db8">
+          <li fid="u757f10a7" data-lake-id="uc5ab004c" id="uc5ab004c" style="text-align: left">
+            <strong>
+              <span data-lake-id="ub32e3a65" id="ub32e3a65">随机翻转</span>
+            </strong>
+            <span data-lake-id="ue4e60e9d" id="ue4e60e9d">：在训练过程中，对数据进行随机翻转以增加数据的多样性。翻转包括水平翻转和垂直翻转，同时调整关节坐标和角度信息。</span>
+          </li>
+        </ul>
+        <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22if%20random.choice(%5B0%2C%201%5D)%3A%5Cn%20%20%20%20data.x%20%3D%20data.x%20*%20torch.tensor(%5B-1%2C1%5D)%5Cn%20%20%20%20data.y%20%3D%20data.y%20*%20torch.tensor(%5B-1%2C1%5D)%5Cn%20%20%20%20data.positions%20%3D%20data.positions%20*%20torch.tensor(%5B-1%2C1%5D)%5Cn%20%20%20%20theta_x%20%3D%20torch.cos(data.theta)%5Cn%20%20%20%20theta_y%20%3D%20torch.sin(data.theta)%5Cn%20%20%20%20data.theta%20%3D%20torch.atan2(theta_y%2C%20-1*theta_x)%22%2C%22autoWrap%22%3Afalse%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22__widthMode%22%3A%22normal%22%2C%22id%22%3A%22LefKM%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%2C%22widthMode%22%3A%22normal%22%7D" hindent="2em">
+        </card>
+        <ul list="u4f5d6187">
+          <li fid="uea519aa6" data-lake-id="ue8a1f211" id="ue8a1f211" style="text-align: left">
+            <strong>
+              <span data-lake-id="ueeecc61f" id="ueeecc61f">角度调整</span>
+            </strong>
+            <span data-lake-id="ucbcf5f3a" id="ucbcf5f3a">：在翻转后，对旋转角度进行修正，确保角度在合理的范围内</span>
+          </li>
+        </ul>
+        <p data-lake-id="u7f1efb05" id="u7f1efb05">
+          <br>
+          </p>
+          <p data-lake-id="u33fa5004" id="u33fa5004" style="text-align: left">
+            <strong>
+              <span data-lake-id="uf8c42d12" id="uf8c42d12">总结</span>
+            </strong>
+          </p>
+          <p data-lake-id="u96513ff5" id="u96513ff5" style="text-align: left">
+            <span data-lake-id="ub3e67dba" id="ub3e67dba">3DPW 数据集的预处理过程包括数据加载、关节点顺序调整、轨迹计算、旋转矩阵生成、数据增强和数据保存等步骤。通过 3dpw_hivt.py 脚本，原始数据被转换为适合模型训练的格式，并增加了数据的多样性，为后续的模型训练和验证提供了高质量的数据支持。</span>
+          </p>
+          <h2 data-lake-id="SOSKu" id="SOSKu">
+            <span data-lake-id="u06495b9a" id="u06495b9a">6 13个关节点</span>
+          </h2>
+          <p data-lake-id="udf69a743" id="udf69a743">
+            <card type="inline" name="image" value="data:%7B%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F0%2F2025%2Fpng%2F34814693%2F1743232244281-68289f7a-cc3a-4bf0-a6f0-1d592eb32c52.png%22%2C%22taskId%22%3A%22u7bbfdfe9-3d49-4594-8b6b-04feca217f7%22%2C%22clientId%22%3A%22uacba06e5-f678-4%22%2C%22originalType%22%3A%22binary%22%2C%22width%22%3A237.5757438442494%2C%22height%22%3A264%2C%22linkTarget%22%3A%22_blank%22%2C%22name%22%3A%22image.png%22%2C%22size%22%3A41878%2C%22from%22%3A%22paste%22%2C%22originWidth%22%3A392%2C%22originHeight%22%3A436%2C%22ratio%22%3A1.6500000953674316%2C%22status%22%3A%22done%22%2C%22style%22%3A%22none%22%2C%22showTitle%22%3Afalse%2C%22title%22%3A%22%22%2C%22rotation%22%3A0%2C%22crop%22%3A%5B0%2C0%2C1%2C1%5D%2C%22averageHue%22%3A%22%23e8e7e7%22%2C%22id%22%3A%22u195eed85%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+            </card>
+          </p>
+          <p data-lake-id="u3d562e90" id="u3d562e90">
+            <span data-lake-id="ue9a632f9" id="ue9a632f9">根据3DPW数据集的标准定义和图像中的标注，该序列中智能体的13个关节点命名如下（索引与名称严格对应）：</span>
+          </p>
+          <table data-lake-id="JmGmC" id="JmGmC" margin="true" row-head="#FAFAFA;#262626" col-head="#FAFAFA;#262626" fit-width="true" class="lake-table" style="width: 749px">
+            <colgroup>
+              <col width="249">
+                <col width="249">
+                  <col width="251">
+                  </colgroup>
+                  <tbody>
+                    <tr data-lake-id="u30bea33d" id="u30bea33d" style="height: 36px">
+                      <td data-lake-id="ua9cbbaba" id="ua9cbbaba">
+                        <p data-lake-id="u304bbae5" id="u304bbae5">
+                          <strong>
+                            <span data-lake-id="ud21c3cc6" id="ud21c3cc6">索引</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="ud5dbb68b" id="ud5dbb68b">
+                        <p data-lake-id="ucc0fa9c3" id="ucc0fa9c3">
+                          <strong>
+                            <span data-lake-id="ufbcb6b91" id="ufbcb6b91">关节点名称</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u995fc5be" id="u995fc5be">
+                        <p data-lake-id="u1b266f37" id="u1b266f37">
+                          <strong>
+                            <span data-lake-id="ud6c5a37f" id="ud6c5a37f">解剖学定位说明</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="ua2c8a1d5" id="ua2c8a1d5" style="height: 36px">
+                      <td data-lake-id="u91f2a31f" id="u91f2a31f">
+                        <p data-lake-id="u04ea5cf4" id="u04ea5cf4">
+                          <strong>
+                            <span data-lake-id="u358747fd" id="u358747fd">0</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u73421d35" id="u73421d35">
+                        <p data-lake-id="ufaf78932" id="ufaf78932">
+                          <strong>
+                            <span data-lake-id="u67aede29" id="u67aede29">Right Hip (右髋)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u4071cc92" id="u4071cc92">
+                        <p data-lake-id="uec10a4ce" id="uec10a4ce">
+                          <strong>
+                            <span data-lake-id="ud5d33204" id="ud5d33204">右下肢与骨盆连接处</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u4d2283f8" id="u4d2283f8" style="height: 36px">
+                      <td data-lake-id="ua52e3a0a" id="ua52e3a0a">
+                        <p data-lake-id="u97418fe4" id="u97418fe4">
+                          <strong>
+                            <span data-lake-id="u1093c5a5" id="u1093c5a5">1</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u20a075f5" id="u20a075f5">
+                        <p data-lake-id="u935f084e" id="u935f084e">
+                          <strong>
+                            <span data-lake-id="u8d436221" id="u8d436221">Left Hip (左髋)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="uf11531ba" id="uf11531ba">
+                        <p data-lake-id="ude571620" id="ude571620">
+                          <strong>
+                            <span data-lake-id="u9a81dffe" id="u9a81dffe">左下肢与骨盆连接处</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="ucf2b702f" id="ucf2b702f" style="height: 36px">
+                      <td data-lake-id="uc07d9b8e" id="uc07d9b8e">
+                        <p data-lake-id="u4d0f002a" id="u4d0f002a">
+                          <strong>
+                            <span data-lake-id="u7cf5839d" id="u7cf5839d">2</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u7458731a" id="u7458731a">
+                        <p data-lake-id="u795b09e7" id="u795b09e7">
+                          <strong>
+                            <span data-lake-id="u8a8ac264" id="u8a8ac264">Right Knee (右膝)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u7e9b1352" id="u7e9b1352">
+                        <p data-lake-id="u33ae92fa" id="u33ae92fa">
+                          <strong>
+                            <span data-lake-id="u3ac68507" id="u3ac68507">右大腿与小腿的连接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="ud54e3216" id="ud54e3216" style="height: 36px">
+                      <td data-lake-id="uaa2a0da0" id="uaa2a0da0">
+                        <p data-lake-id="u7dc3684a" id="u7dc3684a">
+                          <strong>
+                            <span data-lake-id="ue960a1ec" id="ue960a1ec">3</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u79e88b1c" id="u79e88b1c">
+                        <p data-lake-id="uc05cc8ea" id="uc05cc8ea">
+                          <strong>
+                            <span data-lake-id="u72d4cd18" id="u72d4cd18">Left Knee (左膝)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u88774543" id="u88774543">
+                        <p data-lake-id="u30461058" id="u30461058">
+                          <strong>
+                            <span data-lake-id="ua82e5e0f" id="ua82e5e0f">左大腿与小腿的连接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="ucfa2540b" id="ucfa2540b" style="height: 38px">
+                      <td data-lake-id="ucdb19574" id="ucdb19574">
+                        <p data-lake-id="u22a3a11e" id="u22a3a11e">
+                          <strong>
+                            <span data-lake-id="u148d6c24" id="u148d6c24">4</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="ua2ea2f39" id="ua2ea2f39">
+                        <p data-lake-id="u5fd36583" id="u5fd36583">
+                          <strong>
+                            <span data-lake-id="u89105c90" id="u89105c90">Right Ankle（右踝）</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u6f4acf65" id="u6f4acf65">
+                        <p data-lake-id="u3d8a4b1f" id="u3d8a4b1f">
+                          <strong>
+                            <span data-lake-id="uddf905a1" id="uddf905a1">右小腿与足部的旋转枢纽</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u1b9b48df" id="u1b9b48df" style="height: 36px">
+                      <td data-lake-id="u66830abd" id="u66830abd">
+                        <p data-lake-id="udb7532b4" id="udb7532b4">
+                          <strong>
+                            <span data-lake-id="uaa0d05ec" id="uaa0d05ec">5</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u926b7ecd" id="u926b7ecd">
+                        <p data-lake-id="u051cd53c" id="u051cd53c">
+                          <strong>
+                            <span data-lake-id="u5cdacb22" id="u5cdacb22">Left Ankle（左踝）</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u81bc9e03" id="u81bc9e03">
+                        <p data-lake-id="ub23384d9" id="ub23384d9">
+                          <strong>
+                            <span data-lake-id="u51886512" id="u51886512">左小腿与足部的旋转枢纽</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="udb541ea3" id="udb541ea3" style="height: 36px">
+                      <td data-lake-id="u6c953dcd" id="u6c953dcd">
+                        <p data-lake-id="u290cc036" id="u290cc036">
+                          <strong>
+                            <span data-lake-id="u3fec6f5e" id="u3fec6f5e">6</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="uf76bf8b2" id="uf76bf8b2">
+                        <p data-lake-id="ue0f15046" id="ue0f15046">
+                          <strong>
+                            <span data-lake-id="u3208235b" id="u3208235b">Neck (颈部)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u69c19688" id="u69c19688">
+                        <p data-lake-id="ue8276df3" id="ue8276df3">
+                          <strong>
+                            <span data-lake-id="u77f050ca" id="u77f050ca">颈椎与胸椎交界处</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u98a94b05" id="u98a94b05" style="height: 36px">
+                      <td data-lake-id="u2afbd196" id="u2afbd196">
+                        <p data-lake-id="u18ef1398" id="u18ef1398">
+                          <strong>
+                            <span data-lake-id="uee88d5d6" id="uee88d5d6">7</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="uc1b2f15f" id="uc1b2f15f">
+                        <p data-lake-id="u367118c8" id="u367118c8">
+                          <strong>
+                            <span data-lake-id="ud23741dd" id="ud23741dd">Right Shoulder (右肩)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u6175d578" id="u6175d578">
+                        <p data-lake-id="ue5d11a59" id="ue5d11a59">
+                          <strong>
+                            <span data-lake-id="u8e234a2a" id="u8e234a2a">右上肢与躯干连接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u2768fd03" id="u2768fd03" style="height: 36px">
+                      <td data-lake-id="ufc9483fd" id="ufc9483fd">
+                        <p data-lake-id="uc443ddc0" id="uc443ddc0">
+                          <strong>
+                            <span data-lake-id="u63114ea9" id="u63114ea9">8</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="uc41a71d0" id="uc41a71d0">
+                        <p data-lake-id="u70c00919" id="u70c00919">
+                          <strong>
+                            <span data-lake-id="ub1213f6e" id="ub1213f6e">Left Shoulder (左肩)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u6692409a" id="u6692409a">
+                        <p data-lake-id="ub4c3ca9d" id="ub4c3ca9d">
+                          <strong>
+                            <span data-lake-id="u04e9c0b1" id="u04e9c0b1">左上肢与躯干连接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u5dd15eca" id="u5dd15eca">
+                      <td data-lake-id="ub08f01b2" id="ub08f01b2">
+                        <p data-lake-id="u00a5e482" id="u00a5e482">
+                          <strong>
+                            <span data-lake-id="ue7a4e036" id="ue7a4e036">9</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u90cb3acb" id="u90cb3acb">
+                        <p data-lake-id="ub7fa1f0c" id="ub7fa1f0c">
+                          <strong>
+                            <span data-lake-id="ue4099448" id="ue4099448">Right Elbow (右肘)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="ufecf8995" id="ufecf8995">
+                        <p data-lake-id="ua93da6b6" id="ua93da6b6">
+                          <strong>
+                            <span data-lake-id="ude5098f0" id="ude5098f0">右上臂与前臂的铰接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u9fc0cd50" id="u9fc0cd50">
+                      <td data-lake-id="u5c14ecbc" id="u5c14ecbc">
+                        <p data-lake-id="ua7470318" id="ua7470318">
+                          <strong>
+                            <span data-lake-id="uf82c5dd6" id="uf82c5dd6">10</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u8ca38207" id="u8ca38207">
+                        <p data-lake-id="u12b00a3a" id="u12b00a3a">
+                          <strong>
+                            <span data-lake-id="uf109f680" id="uf109f680">Left Elbow (左肘)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="ufb10498f" id="ufb10498f">
+                        <p data-lake-id="u66bb7a9f" id="u66bb7a9f">
+                          <strong>
+                            <span data-lake-id="u23401b11" id="u23401b11">左上臂与前臂的铰接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u6de467ed" id="u6de467ed">
+                      <td data-lake-id="u22fc1b5b" id="u22fc1b5b">
+                        <p data-lake-id="u8c2496b6" id="u8c2496b6">
+                          <strong>
+                            <span data-lake-id="uf9f64b7c" id="uf9f64b7c">11</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u3938ff3d" id="u3938ff3d">
+                        <p data-lake-id="u1b62cad0" id="u1b62cad0">
+                          <strong>
+                            <span data-lake-id="ud6734c85" id="ud6734c85">Right Wrist (右手腕)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="uf97b8798" id="uf97b8798">
+                        <p data-lake-id="uc7539e32" id="uc7539e32">
+                          <strong>
+                            <span data-lake-id="ubc1f3003" id="ubc1f3003">右手末端执行器连接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-lake-id="u1097780c" id="u1097780c" style="height: 36px">
+                      <td data-lake-id="u54bd5600" id="u54bd5600">
+                        <p data-lake-id="ub955fec2" id="ub955fec2">
+                          <strong>
+                            <span data-lake-id="uc7683116" id="uc7683116">12</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u324d9008" id="u324d9008">
+                        <p data-lake-id="u4a4c271e" id="u4a4c271e">
+                          <strong>
+                            <span data-lake-id="ufb20c9c8" id="ufb20c9c8">Left Wrist (左手腕)</span>
+                          </strong>
+                        </p>
+                      </td>
+                      <td data-lake-id="u3255d2be" id="u3255d2be">
+                        <p data-lake-id="ube9021a2" id="ube9021a2">
+                          <strong>
+                            <span data-lake-id="u28d0a9e9" id="u28d0a9e9">左手末端执行器连接点</span>
+                          </strong>
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <h3 data-lake-id="lzhKP" id="lzhKP">
+                  <span data-lake-id="ub6d4df07" id="ub6d4df07">关键说明：</span>
+                </h3>
+                <ol list="u3aecdb83">
+                  <li fid="ubd4820c5" data-lake-id="u9c993128" id="u9c993128">
+                    <strong>
+                      <span data-lake-id="ub2f22c8f" id="ub2f22c8f">层级关系</span>
+                    </strong>
+                    <span data-lake-id="u454a67d9" id="u454a67d9">：</span>
+                  </li>
+                </ol>
+                <ul list="u3aecdb83" data-lake-indent="1">
+                  <li fid="u1556bc32" data-lake-id="u893d7ccf" id="u893d7ccf">
+                    <span data-lake-id="uc3a0e7a1" id="uc3a0e7a1">骨盆(0)为根节点，脊柱(1)和双髋(2-3)为其子节点</span>
+                  </li>
+                  <li fid="u1556bc32" data-lake-id="u3750cdb2" id="u3750cdb2">
+                    <span data-lake-id="uef2b73db" id="uef2b73db">肩关节(7-8)是脊柱(1)的子节点，肘关节(9-10)继承肩关节层级</span>
+                  </li>
+                </ul>
+                <ol list="u3aecdb83" start="2">
+                  <li fid="ubd4820c5" data-lake-id="u5b284929" id="u5b284929">
+                    <strong>
+                      <span data-lake-id="u05c46123" id="u05c46123">运动链特性</span>
+                    </strong>
+                    <span data-lake-id="u670f2343" id="u670f2343">：</span>
+                  </li>
+                </ol>
+                <card type="block" name="diagram" value="data:%7B%22type%22%3A%22mermaid%22%2C%22code%22%3A%22graph%20TD%5Cn%20%200(Pelvis)%20--%3E%201(Spine)%5Cn%20%200%20--%3E%202(Left%20Hip)%20--%3E%204(Left%20Knee)%5Cn%20%200%20--%3E%203(Right%20Hip)%20--%3E%205(Right%20Knee)%5Cn%20%201%20--%3E%206(Neck)%5Cn%20%201%20--%3E%207(Left%20Shoulder)%20--%3E%209(Left%20Elbow)%20--%3E%2011(Left%20Wrist)%5Cn%20%201%20--%3E%208(Right%20Shoulder)%20--%3E%2010(Right%20Elbow)%20--%3E%2012(Right%20Wrist)%22%2C%22url%22%3Anull%2C%22id%22%3A%22ogByF%22%7D">
+                </card>
+                <ol list="u3aecdb83" start="3">
+                  <li fid="ubd4820c5" data-lake-id="u73a25d98" id="u73a25d98">
+                    <strong>
+                      <span data-lake-id="u51fa88fc" id="u51fa88fc">数据标注一致性</span>
+                    </strong>
+                    <span data-lake-id="ua3dd2875" id="ua3dd2875">：</span>
+                  </li>
+                </ol>
+                <ul list="u3aecdb83" data-lake-indent="1">
+                  <li fid="uc9a148b3" data-lake-id="u5bc375cd" id="u5bc375cd">
+                    <span data-lake-id="u4538e2e3" id="u4538e2e3">3DPW采用CMU MoCap标准，与SMPL模型拓扑结构兼容</span>
+                  </li>
+                  <li fid="uc9a148b3" data-lake-id="uf490181e" id="uf490181e">
+                    <span data-lake-id="ue37419ad" id="ue37419ad">手腕节点(11-12)实际对应SMPL的手部末端，非严格解剖学腕关节</span>
+                  </li>
+                </ul>
+                <p data-lake-id="u70f13d96" id="u70f13d96">
+                  <span data-lake-id="u09abe54b" id="u09abe54b">建议在可视化时用不同颜色区分身体部位（如红色躯干、蓝色上肢、绿色下肢），该标注体系可直接用于运动重定向、姿态估计等任务。</span>
+                </p>
+                <h1 data-lake-id="IUv4V" id="IUv4V" style="text-align: left">
+                  <span data-lake-id="ue1dcca6e" id="ue1dcca6e">二、可视化</span>
+                </h1>
+                <details data-lake-id="u7a2615b4" id="u7a2615b4" open="false" class="lake-collapse">
+                  <summary data-lake-id="u67ad8e1a" id="u67ad8e1a" class="lake-summary">
+                    <span data-lake-id="u79ce1f6d" id="u79ce1f6d"> </span>
+                    <strong>
+                      <span data-lake-id="u93323b92" id="u93323b92">viz_joint_jansang_v2 </span>
+                    </strong>
+                    <span data-lake-id="ueb0996ef" id="ueb0996ef">函数分析</span>
+                  </summary>
+                  <p data-lake-id="u1f86f434" id="u1f86f434">
+                    <span data-lake-id="u8c973282" id="u8c973282">viz_joint_jansang_v2函数是一个可视化工具，用于生成3D人体姿态预测结果的可视化图像。主要功能包括：</span>
+                  </p>
+                  <ol list="u412681f2">
+                    <li fid="u5aa963fb" data-lake-id="uaa700166" id="uaa700166">
+                      <span data-lake-id="u10985174" id="u10985174">数据准备：<br />
+                      </span>
+                      <span data-lake-id="u9bbb3d1f" id="u9bbb3d1f">• 处理输入的预测结果(pred)和真实值(gt)<br />
+                      </span>
+                      <span data-lake-id="u936de77a" id="u936de77a">• 处理掩码数据，区分历史帧和未来帧<br />
+                      </span>
+                      <span data-lake-id="ub8743282" id="ub8743282">• 设置骨骼连接关系(bones)</span>
+                    </li>
+                    <li fid="u5aa963fb" data-lake-id="u38085eb8" id="u38085eb8">
+                      <span data-lake-id="ud3a8ff0a" id="ud3a8ff0a">可视化过程：<br />
+                      </span>
+                      <span data-lake-id="ude649473" id="ude649473">• 为每个场景(scene)和每一帧(frame)创建3D图像<br />
+                      </span>
+                      <span data-lake-id="u684d4809" id="u684d4809">• 分别处理历史帧和未来帧的可视化：<br />
+                      </span>
+                      <span data-lake-id="u4a1fff0f" id="u4a1fff0f"> ◦ 绘制关节点(scatter3D)<br />
+                      </span>
+                      <span data-lake-id="udd41f9ce" id="udd41f9ce"> ◦ 绘制骨骼连接(Line3D)<br />
+                      </span>
+                      <span data-lake-id="ufea82db3" id="ufea82db3"> ◦ 绘制历史轨迹(带有渐变效果)</span>
+                    </li>
+                    <li fid="u5aa963fb" data-lake-id="uebf3c194" id="uebf3c194">
+                      <span data-lake-id="u044c2da1" id="u044c2da1">场景设置：<br />
+                      </span>
+                      <span data-lake-id="ufbb82e8a" id="ufbb82e8a">• 添加水平面和网格线<br />
+                      </span>
+                      <span data-lake-id="ub0cffe83" id="ub0cffe83">• 设置场景中心和视角范围<br />
+                      </span>
+                      <span data-lake-id="u377d9fb4" id="u377d9fb4">• 设置坐标轴属性和背景</span>
+                    </li>
+                    <li fid="u5aa963fb" data-lake-id="u0d1f45dd" id="u0d1f45dd">
+                      <span data-lake-id="u4406c128" id="u4406c128">输出保存：<br />
+                      </span>
+                      <span data-lake-id="ue96432cb" id="ue96432cb">• 将每一帧的可视化结果保存为高质量PNG图像<br />
+                      </span>
+                      <span data-lake-id="uca9b6f03" id="uca9b6f03">• 输出路径格式为：output_dir/viz_results/joint_jansang/batch_X/scene_XXX_frame_XXX.png<br />
+                      </span>
+                      <span data-lake-id="u07fd5639" id="u07fd5639">这个函数的主要用途是帮助研究人员：<br />
+                      </span>
+                      <span data-lake-id="u4ca02ed2" id="u4ca02ed2">• 直观地查看模型预测的人体姿态<br />
+                      </span>
+                      <span data-lake-id="u48abf7f9" id="u48abf7f9">• 对比预测结果和真实值的差异<br />
+                      </span>
+                      <span data-lake-id="u00bd1941" id="u00bd1941">• 分析模型在不同时间步的表现<br />
+                      </span>
+                      <span data-lake-id="uffdda6c2" id="uffdda6c2">• 生成用于演示或论文的可视化结果<br />
+                      </span>
+                      <span data-lake-id="u4ca58116" id="u4ca58116">输出的图像包含了完整的3D人体骨架结构，并且通过不同的时间步展示了人体运动的连续变化过程。</span>
+                    </li>
+                  </ol>
+                </details>
+                <h1 data-lake-id="LIyS1" id="LIyS1" collapsed="true" style="text-align: left">
+                  <span data-lake-id="u65f7e7f1" id="u65f7e7f1">三、模型</span>
+                </h1>
+                <p data-lake-id="ua1f6601a" id="ua1f6601a">
+                  <br>
+                  </p>
+                  <h1 data-lake-id="aPJr7" id="aPJr7" style="text-align: left">
+                    <span data-lake-id="u03efaaf6" id="u03efaaf6">四、不同的全局-局部分析算法：</span>
+                  </h1>
+                  <ul list="u03be3244">
+                    <li fid="u22eb90be" data-lake-id="u175a9568" id="u175a9568">
+                      <span data-lake-id="u3d0c6c88" id="u3d0c6c88" class="lake-fontsize-12" style="color: rgb(0,0,0)">均值法：是用每个智能体的中心点的位置变化来代表全局意图，每个关节相对中心点的局部坐标变化来代表局部意图</span>
+                    </li>
+                    <li fid="u22eb90be" data-lake-id="u4af8ae91" id="u4af8ae91">
+                      <span data-lake-id="ue094df6e" id="ue094df6e" class="lake-fontsize-12" style="color: rgb(0,0,0)">髋部法：是用每个智能体的髋关节的位置变化来代表全局意图，每个关节相对髋关节的局部坐标变化来代表局部意图（代码利用的是右髋部）</span>
+                    </li>
+                    <li fid="u22eb90be" data-lake-id="ua24b7546" id="ua24b7546">
+                      <span data-lake-id="u7fd3c736" id="u7fd3c736" class="lake-fontsize-12" style="color: rgb(0,0,0)">加权平均法：是先通过为不同的关节分配不同的权重来计算加权平均位置，再用每个智能体的加权平均位置的位置变化来代表全局意图，每个关节相对加权平均位置的局部坐标变化来代表局部意图</span>
+                    </li>
+                  </ul>
+                  <h2 data-lake-id="bMbSD" id="bMbSD" data-lake-index-type="0">
+                    <span data-lake-id="u9d1680db" id="u9d1680db" class="lake-fontsize-12" style="color: rgb(0,0,0)">代码里用到髋部法/需要修改的地方</span>
+                  </h2>
+                  <p data-lake-id="u68392b4f" id="u68392b4f">
+                    <span data-lake-id="u50150e02" id="u50150e02" class="lake-fontsize-12">先尝试保存这个特定位置的坐标信息，[N，T，3]</span>
+                  </p>
+                  <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22utils.py%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Atrue%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22utils.py%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22yNb7i%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                  </card>
+                  <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%223dpw_hivt.py%20%E6%95%B0%E6%8D%AE%E9%A2%84%E5%A4%84%E7%90%86%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%23%202.%20%E5%88%86%E7%A6%BB%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E8%BD%A8%E8%BF%B9%5Cn%23%20%E5%B0%86seq_data%E5%88%86%E5%89%B2%E4%B8%BA%E8%BE%93%E5%85%A5%E8%BD%A8%E8%BF%B9%E5%92%8C%E8%BE%93%E5%87%BA%E8%BD%A8%E8%BF%B9%3A%5Cn%23%201.%20%E5%8F%96seq_data%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9(%E9%AB%8B%E5%85%B3%E8%8A%82%2C%E7%B4%A2%E5%BC%95%E4%B8%BA0)%E7%9A%84%E4%BD%8D%E7%BD%AE%2F%E5%9D%90%E6%A0%87%E4%BF%A1%E6%81%AF%5Cn%23%202.%20%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E5%89%8Dref_time%E5%B8%A7%2F%E6%97%B6%E9%97%B4%E6%AD%A5%E9%87%8C%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%9D%90%E6%A0%87%E5%8F%98%E5%8C%96%E4%BD%9C%E4%B8%BA%E8%BE%93%E5%85%A5%E8%BD%A8%E8%BF%B9input_traj%5Cn%23%203.%20%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E5%90%8E%E7%BB%AD%E5%B8%A7%2F%E6%97%B6%E9%97%B4%E6%AD%A5%E9%87%8C%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%9D%90%E6%A0%87%E5%8F%98%E5%8C%96%E4%BD%9C%E4%B8%BA%E8%BE%93%E5%87%BA%E8%BD%A8%E8%BF%B9output_traj%5Cn%23%204.%20%E8%BD%AC%E6%8D%A2%E4%B8%BAfloat%E7%B1%BB%E5%9E%8B%E7%9A%84tensor%5Cninput_traj%2C%20output_traj%20%3D%20torch.tensor(%5Cn%20%20%20%20seq_data%5B%3A%2C%20%3A%20self.ref_time%2C%200%5D%2C%20dtype%3Dtorch.float%5Cn)%2C%20torch.tensor(%5Cn%20%20%20%20seq_data%5B%3A%2C%20self.ref_time%20%3A%2C%200%5D%2C%20dtype%3Dtorch.float%5Cn)%20%20%23%20todo%EF%BC%9AOnly%20hip%20joint%20info(%E5%8F%AA%E6%9C%89%E9%AB%8B%E5%85%B3%E8%8A%82%E4%BF%A1%E6%81%AF)%2F%E6%B3%A8%3A%E5%8F%AA%E4%BD%BF%E7%94%A8%E9%AB%8B%E5%85%B3%E8%8A%82%E4%BD%8D%E7%BD%AE%E6%9D%A5%E8%A1%A8%E7%A4%BA%E6%95%B4%E4%BD%93%E8%BF%90%E5%8A%A8%E8%BD%A8%E8%BF%B9%5Cn%23%20%E9%AB%8B%E9%83%A8%E6%B3%95%EF%BC%9A%E7%94%A8%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E9%AB%8B%E5%85%B3%E8%8A%82%E7%9A%84%E4%BD%8D%E7%BD%AE%E5%8F%98%E5%8C%96%E6%9D%A5%E4%BB%A3%E8%A1%A8%E5%85%A8%E5%B1%80%E6%84%8F%E5%9B%BE%2F%E5%85%A8%E5%B1%80%E8%BD%A8%E8%BF%B9%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Atrue%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%223dpw_hivt.py%20%E6%95%B0%E6%8D%AE%E9%A2%84%E5%A4%84%E7%90%86%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22__widthMode%22%3A%22normal%22%2C%22id%22%3A%22gfWVK%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%2C%22widthMode%22%3A%22normal%22%7D">
+                  </card>
+                  <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22t2p_dataset.py%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Atrue%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22t2p_dataset.py%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22xnp1y%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                  </card>
+                  <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22%E6%A8%A1%E5%9E%8B%E7%9A%84%E5%90%84%E5%B1%82%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%E6%A8%A1%E5%9E%8B%E7%9A%84%E5%90%84%E5%B1%82%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Afalse%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22%E6%A8%A1%E5%9E%8B%E7%9A%84%E5%90%84%E5%B1%82%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%7B%22from%22%3A0%2C%22to%22%3A5%2C%22color%22%3A%22%23DF2A3F%22%7D%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22spDNf%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                  </card>
+                  <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22lightningModel_T2P.py%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Atrue%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22lightningModel_T2P.py%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22yr4AM%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                  </card>
+                  <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22t2p_metrics.py%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Atrue%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22t2p_metrics.py%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22iZkNb%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                  </card>
+                  <card type="inline" name="codeblock" value="data:%7B%22search%22%3A%22viz.py%22%2C%22mode%22%3A%22python%22%2C%22code%22%3A%22%22%2C%22autoWrap%22%3Atrue%2C%22lineNumbers%22%3Atrue%2C%22heightLimit%22%3Atrue%2C%22collapsed%22%3Atrue%2C%22hideToolbar%22%3Afalse%2C%22name%22%3A%22viz.py%22%2C%22tabSize%22%3Anull%2C%22indentWithTab%22%3Afalse%2C%22lightLines%22%3A%5B%5D%2C%22foldLines%22%3A%5B%5D%2C%22customStyle%22%3A%5B%5D%2C%22theme%22%3A%22Github%20Light%22%2C%22__spacing%22%3A%22both%22%2C%22id%22%3A%22z1oNk%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                  </card>
+                  <p data-lake-id="u0081c016" id="u0081c016">
+                    <strong>
+                      <span data-lake-id="u00639fe8" id="u00639fe8" class="lake-fontsize-16" style="background-color: #FBDE28">好像有思路了，预处理时计算出特定位置（三种方法使用不同的数据集），  然后在嵌入模型时也计算出这个特定位置，就不用修改模型结构了。</span>
+                    </strong>
+                  </p>
+                  <p data-lake-id="ubac8eeda" id="ubac8eeda">
+                    <strong>
+                      <span data-lake-id="u8c86b93e" id="u8c86b93e" class="lake-fontsize-16" style="background-color: #FBDE28">​</span>
+                    </strong>
+                    <br>
+                    </p>
+                    <p data-lake-id="u614a33e4" id="u614a33e4">
+                      <strong>
+                        <span data-lake-id="u2d27b8a9" id="u2d27b8a9" class="lake-fontsize-16" style="background-color: #FBDE28">先看一遍论文的公式，根据公式修改代码</span>
+                      </strong>
+                    </p>
+                    <p data-lake-id="u2ea6c77d" id="u2ea6c77d">
+                      <strong>
+                        <span data-lake-id="u1fe677f7" id="u1fe677f7" class="lake-fontsize-14" style="background-color: #FBDE28">重点是计算出特定位置，</span>
+                      </strong>
+                    </p>
+                    <p data-lake-id="uf4d11489" id="uf4d11489">
+                      <strong>
+                        <span data-lake-id="udf32d58b" id="udf32d58b" class="lake-fontsize-14" style="background-color: #FBDE28">还有这个位置如何嵌入模型进行编码解码</span>
+                      </strong>
+                    </p>
+                    <p data-lake-id="ud7c6f0e5" id="ud7c6f0e5">
+                      <strong>
+                        <span data-lake-id="u3fcf2141" id="u3fcf2141" class="lake-fontsize-14" style="background-color: #FBDE28">还有如何根据这个位置计算出全局轨迹和局部姿态（可视化时要注意全局轨迹）</span>
+                      </strong>
+                    </p>
+                    <p data-lake-id="u328fddc4" id="u328fddc4">
+                      <card type="inline" name="image" value="data:%7B%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F0%2F2025%2Fpng%2F34814693%2F1743084323297-b268bf2f-3ab9-43eb-ac01-45217e1c8005.png%22%2C%22taskId%22%3A%22u85645d64-783c-4e73-84a5-0fd5da23ca9%22%2C%22clientId%22%3A%22uc46cee03-d577-4%22%2C%22originalType%22%3A%22binary%22%2C%22width%22%3A708.6%2C%22height%22%3A422%2C%22linkTarget%22%3A%22_blank%22%2C%22name%22%3A%22%E5%9B%BE%E7%89%87.png%22%2C%22size%22%3A254054%2C%22from%22%3A%22paste%22%2C%22originWidth%22%3A1181%2C%22originHeight%22%3A704%2C%22ratio%22%3A1.6666666666666667%2C%22status%22%3A%22done%22%2C%22style%22%3A%22none%22%2C%22search%22%3A%22%232.%E5%88%86%E7%A6%BB%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E8%BD%A8%E8%BF%B9%20%23%E5%B0%86SEQ_DATA%E5%88%86%E5%89%B2%E4%B8%BA%E8%BE%93%E5%85%A5%E8%BD%A8%E8%BF%B9%E5%92%8C%E8%BE%93%E5%87%BA%E8%BD%A8%E8%BF%B9%3A%20%231.%E5%8F%96SEQ_DATA%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9(%E9%AB%93%E5%85%B3%E8%8A%82%2C%E7%B4%A2%E5%BC%95%E4%B8%BA0)%E7%9A%84%E4%BD%8D%E7%BD%AE%2F%E5%9D%90%E6%A0%87%E4%BF%A1%E6%81%AF%20%232.%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E5%89%8DREF%20TIME%E5%B8%A7%2F%E6%97%B6%E9%97%B4%E6%AD%A5%E9%87%8C%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%9D%90%E6%A0%87%E5%8F%98%E5%8C%96%E4%BD%9C%20%233.%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E5%90%8E%E7%BB%AD%E5%B8%A7%2F%E6%97%B6%E9%97%B4%E6%AD%A5%E9%87%8C%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%9D%90%E6%A0%87%E5%8F%98%E5%8C%96%E4%BD%9C%E4%B8%BA%E8%BE%93%E5%87%BA%E8%BD%A8%20%234.%E8%BD%AC%E6%8D%A2%E4%B8%BAFLOAT%E7%B1%BB%E5%9E%8B%E7%9A%84TENSOR%20INPUT_TRAJ%2C%20OUTPUT_TRAJ%20-%20TORCH.TENSOR(%20SEQ_DATA%5B%3A%2C%20%3A%20SELF.REF_TIME%2C%20O%5D%2C%20DTYPE-TORCH.FLOAT%20)%2C%20TORCH.TENSOR(%20SEQ_DATA%5B%3A%2C%20SELF.REF_TIME%20%3A%2C%20OL%2C%20DTYPE-TORCH.FLOAT%20%23TODO%3AONLY%20HIP%20JOINT%20INFO(%E5%8F%AA%E6%9C%89%E6%85%8C%E5%85%B3%E8%8A%82%E4%BF%A1%E6%81%AF)%2F%E6%B3%A8%3A%E5%8F%AA%E4%BD%BF%E7%94%A8%E6%85%8C%20%23%E9%AB%93%E9%83%A8%E6%B3%95%3A%E7%94%A8%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E9%AB%93%E5%85%B3%E8%8A%82%E7%9A%84%E4%BD%8D%E7%BD%AE%E5%8F%98%E5%8C%96%E6%9D%A5%E4%BB%A3%E8%A1%A8%E5%85%A8%E5%B1%80%E6%84%8F%E5%9B%BE%2F%E5%85%A8%E5%B1%80%E8%BD%A8%3E%20%E5%9B%BE%E7%BB%93%E6%9E%84%E7%9A%84%E8%BE%B9%E8%BF%9E%E6%8E%A5%E5%85%B3%E7%B3%BB%2F%E7%94%9F%E6%88%90%E8%BE%B9%E7%B4%A2%E5%BC%95%2C%E8%A1%A8%E7%A4%BA%E6%89%80%E6%9C%89%E5%8F%AF%E8%83%BD%E7%9A%84%E8%8A%82%E7%82%B9%E5%AF%B9%20%23%20EDGE_INDEX%20-%20(%20TORCH.LONGTENSOR(LIST(PERMUTATIONS(RANGE(N)%2C%202))).T(%22%2C%22ocrLocations%22%3A%5B%7B%22x%22%3A169%2C%22y%22%3A13%2C%22width%22%3A346%2C%22height%22%3A33%2C%22text%22%3A%22%232.%E5%88%86%E7%A6%BB%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E8%BD%A8%E8%BF%B9%22%7D%2C%7B%22x%22%3A166%2C%22y%22%3A57%2C%22width%22%3A608%2C%22height%22%3A35%2C%22text%22%3A%22%23%E5%B0%86SEQ_DATA%E5%88%86%E5%89%B2%E4%B8%BA%E8%BE%93%E5%85%A5%E8%BD%A8%E8%BF%B9%E5%92%8C%E8%BE%93%E5%87%BA%E8%BD%A8%E8%BF%B9%3A%22%7D%2C%7B%22x%22%3A169%2C%22y%22%3A101%2C%22width%22%3A979%2C%22height%22%3A31%2C%22text%22%3A%22%231.%E5%8F%96SEQ_DATA%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9(%E9%AB%93%E5%85%B3%E8%8A%82%2C%E7%B4%A2%E5%BC%95%E4%B8%BA0)%E7%9A%84%E4%BD%8D%E7%BD%AE%2F%E5%9D%90%E6%A0%87%E4%BF%A1%E6%81%AF%22%7D%2C%7B%22x%22%3A168%2C%22y%22%3A144%2C%22width%22%3A977%2C%22height%22%3A29%2C%22text%22%3A%22%232.%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E5%89%8DREF%20TIME%E5%B8%A7%2F%E6%97%B6%E9%97%B4%E6%AD%A5%E9%87%8C%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%9D%90%E6%A0%87%E5%8F%98%E5%8C%96%E4%BD%9C%22%7D%2C%7B%22x%22%3A170%2C%22y%22%3A187%2C%22width%22%3A982%2C%22height%22%3A32%2C%22text%22%3A%22%233.%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E5%90%8E%E7%BB%AD%E5%B8%A7%2F%E6%97%B6%E9%97%B4%E6%AD%A5%E9%87%8C%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%9D%90%E6%A0%87%E5%8F%98%E5%8C%96%E4%BD%9C%E4%B8%BA%E8%BE%93%E5%87%BA%E8%BD%A8%22%7D%2C%7B%22x%22%3A167%2C%22y%22%3A231%2C%22width%22%3A477%2C%22height%22%3A29%2C%22text%22%3A%22%234.%E8%BD%AC%E6%8D%A2%E4%B8%BAFLOAT%E7%B1%BB%E5%9E%8B%E7%9A%84TENSOR%22%7D%2C%7B%22x%22%3A173%2C%22y%22%3A275%2C%22width%22%3A680%2C%22height%22%3A34%2C%22text%22%3A%22INPUT_TRAJ%2C%20OUTPUT_TRAJ%20-%20TORCH.TENSOR(%22%7D%2C%7B%22x%22%3A251%2C%22y%22%3A314%2C%22width%22%3A864%2C%22height%22%3A38%2C%22text%22%3A%22SEQ_DATA%5B%3A%2C%20%3A%20SELF.REF_TIME%2C%20O%5D%2C%20DTYPE-TORCH.FLOAT%22%7D%2C%7B%22x%22%3A172%2C%22y%22%3A360%2C%22width%22%3A282%2C%22height%22%3A34%2C%22text%22%3A%22)%2C%20TORCH.TENSOR(%22%7D%2C%7B%22x%22%3A241%2C%22y%22%3A406%2C%22width%22%3A872%2C%22height%22%3A31%2C%22text%22%3A%22SEQ_DATA%5B%3A%2C%20SELF.REF_TIME%20%3A%2C%20OL%2C%20DTYPE-TORCH.FLOAT%22%7D%2C%7B%22x%22%3A220%2C%22y%22%3A445%2C%22width%22%3A930%2C%22height%22%3A36%2C%22text%22%3A%22%23TODO%3AONLY%20HIP%20JOINT%20INFO(%E5%8F%AA%E6%9C%89%E6%85%8C%E5%85%B3%E8%8A%82%E4%BF%A1%E6%81%AF)%2F%E6%B3%A8%3A%E5%8F%AA%E4%BD%BF%E7%94%A8%E6%85%8C%22%7D%2C%7B%22x%22%3A168%2C%22y%22%3A488%2C%22width%22%3A987%2C%22height%22%3A32%2C%22text%22%3A%22%23%E9%AB%93%E9%83%A8%E6%B3%95%3A%E7%94%A8%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E9%AB%93%E5%85%B3%E8%8A%82%E7%9A%84%E4%BD%8D%E7%BD%AE%E5%8F%98%E5%8C%96%E6%9D%A5%E4%BB%A3%E8%A1%A8%E5%85%A8%E5%B1%80%E6%84%8F%E5%9B%BE%2F%E5%85%A8%E5%B1%80%E8%BD%A8%3E%22%7D%2C%7B%22x%22%3A209%2C%22y%22%3A571%2C%22width%22%3A806%2C%22height%22%3A38%2C%22text%22%3A%22%E5%9B%BE%E7%BB%93%E6%9E%84%E7%9A%84%E8%BE%B9%E8%BF%9E%E6%8E%A5%E5%85%B3%E7%B3%BB%2F%E7%94%9F%E6%88%90%E8%BE%B9%E7%B4%A2%E5%BC%95%2C%E8%A1%A8%E7%A4%BA%E6%89%80%E6%9C%89%E5%8F%AF%E8%83%BD%E7%9A%84%E8%8A%82%E7%82%B9%E5%AF%B9%22%7D%2C%7B%22x%22%3A169%2C%22y%22%3A579%2C%22width%22%3A22%2C%22height%22%3A28%2C%22text%22%3A%22%23%22%7D%2C%7B%22x%22%3A173%2C%22y%22%3A620%2C%22width%22%3A233%2C%22height%22%3A32%2C%22text%22%3A%22EDGE_INDEX%20-%20(%22%7D%2C%7B%22x%22%3A241%2C%22y%22%3A665%2C%22width%22%3A907%2C%22height%22%3A32%2C%22text%22%3A%22TORCH.LONGTENSOR(LIST(PERMUTATIONS(RANGE(N)%2C%202))).T(%22%7D%5D%2C%22showTitle%22%3Afalse%2C%22title%22%3A%22%22%2C%22rotation%22%3A0%2C%22crop%22%3A%5B0%2C0%2C1%2C1%5D%2C%22averageHue%22%3A%22%23fcfbf9%22%2C%22id%22%3A%22ue8294149%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                      </card>
+                      <span data-lake-id="ub1d6feb9" id="ub1d6feb9"> </span>
+                    </p>
+                    <p data-lake-id="uf33fce00" id="uf33fce00">
+                      <card type="inline" name="image" value="data:%7B%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F0%2F2025%2Fpng%2F34814693%2F1743087567177-61ffc396-1e58-4a8a-9f75-26b1f4be792f.png%22%2C%22taskId%22%3A%22uc2adacf5-8787-415e-882e-6e2fa740346%22%2C%22clientId%22%3A%22uc46cee03-d577-4%22%2C%22originalType%22%3A%22binary%22%2C%22width%22%3A723.6%2C%22height%22%3A415%2C%22linkTarget%22%3A%22_blank%22%2C%22name%22%3A%22%E5%9B%BE%E7%89%87.png%22%2C%22size%22%3A248074%2C%22from%22%3A%22paste%22%2C%22originWidth%22%3A1206%2C%22originHeight%22%3A691%2C%22ratio%22%3A1.6666666666666667%2C%22status%22%3A%22done%22%2C%22style%22%3A%22none%22%2C%22search%22%3A%22%23%E5%B0%86%E5%A4%84%E7%90%86%E5%90%8E%E7%9A%84%E6%95%B0%E6%8D%AE%E6%95%B4%E7%90%86%E6%88%90%E5%AD%97%E5%85%B8%2C%E5%8C%85%E5%90%AB%E4%BB%A5%E4%B8%8B%E5%AD%97%E6%AE%B5%3A%20%23BODY_XYZ%3A%E4%BA%BA%E4%BD%93%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%8E%9F%E5%A7%8B3D%E5%9D%90%E6%A0%87%E5%BA%8F%E5%88%97%5BN%2CT%2C%5D%2C3%5D%20%E5%8F%82%E8%80%83%E5%B8%A7%E4%B9%8B%E5%89%8D%E7%9A%84%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%A7%BB%E5%BA%8F%E5%88%97%5BN%2CREF_TIME%2C3%5D%20%23%20X%3A%20%23POSITIONS%3A%E6%89%80%E6%9C%89%E5%B8%A7%E7%9A%84%E7%BB%9D%E5%AF%B9%E4%BD%8D%E7%BD%AE%E5%BA%8F%E5%88%97%5BN%2CT%2C3%5D%20%3AROTATE_ANGLES%3A%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E6%97%8B%E8%BD%AC%E8%A7%92%E5%BA%A6%5BN%5D%20%23%20%5BN%2C%20T%5D%20%23%20PADDING_MASK%3A%E6%97%B6%E5%BA%8F%E6%95%B0%E6%8D%AE%E7%9A%84PADDING%E6%8E%A9%E7%A0%81%20DEX%3A%E5%9B%BE%E7%BB%93%E6%9E%84%E7%9A%84%E8%BE%B9%E8%BF%9E%E6%8E%A5%E5%85%B3%E7%B3%BB%20%5B2%2C%20NUM_EDGES%5D%20%23%20EDGE_INDEX%3A%20%23BOS_MASK%3A%E5%BA%8F%E5%88%97%E8%B5%B7%E5%A7%8B%E4%BD%8D%E7%BD%AE%E7%9A%84%E6%8E%A9%E7%A0%81%20%5BN%2C%20REF_TIME%5D%20CN%20%23Y%3A%E5%8F%82%E8%80%83%E5%B8%A7%E4%B9%8B%E5%90%8E%E7%9A%84%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%A7%BB%20%5D%20%5BN%2C%20T-REF_TIME%2C%203%5D%20%E5%9C%BA%E6%99%AF%E4%B8%ADACTOR%E7%9A%84%E6%95%B0%E9%87%8F%20N%20NUM%20NODES%3A%20%23%20%23ROTATE_MAT%3A%E6%AF%8F%E4%B8%AAACTOR%E7%9A%84%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5%20%5BN%2C%203%2C%203%5D%20%23TODO%3A%E5%BA%94%E8%AF%A5%E5%A2%9E%E5%8A%A0%E4%B8%AD%E5%BF%83%E7%82%B9%E5%92%8C%E5%8A%A0%E6%9D%83%E5%B9%B3%E5%9D%87%E4%BD%8D%E7%BD%AE%E5%88%B0%E9%A2%84%E5%A4%84%E7%90%86%E5%90%8E%E7%9A%84%E6%95%B0%E6%8D%AE%E9%87%8C%20%23TODO%3A%E9%81%BF%E5%85%8D%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86(%E5%A5%BD%E5%83%8F%E4%B8%8D%E5%AF%B9)%20%23TODO%3A%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95%E4%BC%9A%E5%AF%B9%E6%95%B0%E6%8D%AE%E4%BA%A7%E7%94%9F%E4%B8%8D%E5%90%8C%E7%9A%84%E5%BD%B1%E5%93%8D%2C%E6%95%B0%E6%8D%AE%E5%B0%B1%E6%98%AF%E5%BA%94%E8%AF%A5%E4%B8%8D%E4%B8%80%E6%A0%B7%20TODO%3A%E9%9C%80%E8%A6%81%E7%8E%B0%E9%A2%84%E5%A4%84%E7%90%86%2C%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86%2C%E6%94%BE%E5%88%B0%E4%B8%8D%E5%90%8C%E7%9A%84%E7%9B%AE%E5%BD%95%E9%87%8C%20%23%22%2C%22ocrLocations%22%3A%5B%7B%22x%22%3A133%2C%22y%22%3A25%2C%22width%22%3A637%2C%22height%22%3A30%2C%22text%22%3A%22%23%E5%B0%86%E5%A4%84%E7%90%86%E5%90%8E%E7%9A%84%E6%95%B0%E6%8D%AE%E6%95%B4%E7%90%86%E6%88%90%E5%AD%97%E5%85%B8%2C%E5%8C%85%E5%90%AB%E4%BB%A5%E4%B8%8B%E5%AD%97%E6%AE%B5%3A%22%7D%2C%7B%22x%22%3A133%2C%22y%22%3A66%2C%22width%22%3A850%2C%22height%22%3A35%2C%22text%22%3A%22%23BODY_XYZ%3A%E4%BA%BA%E4%BD%93%E5%85%B3%E8%8A%82%E7%82%B9%E7%9A%84%E5%8E%9F%E5%A7%8B3D%E5%9D%90%E6%A0%87%E5%BA%8F%E5%88%97%5BN%2CT%2C%5D%2C3%5D%22%7D%2C%7B%22x%22%3A218%2C%22y%22%3A109%2C%22width%22%3A676%2C%22height%22%3A36%2C%22text%22%3A%22%E5%8F%82%E8%80%83%E5%B8%A7%E4%B9%8B%E5%89%8D%E7%9A%84%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%A7%BB%E5%BA%8F%E5%88%97%5BN%2CREF_TIME%2C3%5D%22%7D%2C%7B%22x%22%3A134%2C%22y%22%3A116%2C%22width%22%3A68%2C%22height%22%3A26%2C%22text%22%3A%22%23%20X%3A%22%7D%2C%7B%22x%22%3A132%2C%22y%22%3A158%2C%22width%22%3A717%2C%22height%22%3A33%2C%22text%22%3A%22%23POSITIONS%3A%E6%89%80%E6%9C%89%E5%B8%A7%E7%9A%84%E7%BB%9D%E5%AF%B9%E4%BD%8D%E7%BD%AE%E5%BA%8F%E5%88%97%5BN%2CT%2C3%5D%22%7D%2C%7B%22x%22%3A165%2C%22y%22%3A198%2C%22width%22%3A648%2C%22height%22%3A36%2C%22text%22%3A%22%3AROTATE_ANGLES%3A%E6%AF%8F%E4%B8%AA%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E6%97%8B%E8%BD%AC%E8%A7%92%E5%BA%A6%5BN%5D%22%7D%2C%7B%22x%22%3A130%2C%22y%22%3A199%2C%22width%22%3A21%2C%22height%22%3A29%2C%22text%22%3A%22%23%22%7D%2C%7B%22x%22%3A775%2C%22y%22%3A242%2C%22width%22%3A99%2C%22height%22%3A34%2C%22text%22%3A%22%5BN%2C%20T%5D%22%7D%2C%7B%22x%22%3A132%2C%22y%22%3A244%2C%22width%22%3A19%2C%22height%22%3A28%2C%22text%22%3A%22%23%22%7D%2C%7B%22x%22%3A167%2C%22y%22%3A242%2C%22width%22%3A588%2C%22height%22%3A35%2C%22text%22%3A%22PADDING_MASK%3A%E6%97%B6%E5%BA%8F%E6%95%B0%E6%8D%AE%E7%9A%84PADDING%E6%8E%A9%E7%A0%81%22%7D%2C%7B%22x%22%3A311%2C%22y%22%3A283%2C%22width%22%3A351%2C%22height%22%3A31%2C%22text%22%3A%22DEX%3A%E5%9B%BE%E7%BB%93%E6%9E%84%E7%9A%84%E8%BE%B9%E8%BF%9E%E6%8E%A5%E5%85%B3%E7%B3%BB%22%7D%2C%7B%22x%22%3A681%2C%22y%22%3A284%2C%22width%22%3A241%2C%22height%22%3A35%2C%22text%22%3A%22%5B2%2C%20NUM_EDGES%5D%22%7D%2C%7B%22x%22%3A132%2C%22y%22%3A287%2C%22width%22%3A234%2C%22height%22%3A28%2C%22text%22%3A%22%23%20EDGE_INDEX%3A%22%7D%2C%7B%22x%22%3A130%2C%22y%22%3A328%2C%22width%22%3A496%2C%22height%22%3A33%2C%22text%22%3A%22%23BOS_MASK%3A%E5%BA%8F%E5%88%97%E8%B5%B7%E5%A7%8B%E4%BD%8D%E7%BD%AE%E7%9A%84%E6%8E%A9%E7%A0%81%22%7D%2C%7B%22x%22%3A647%2C%22y%22%3A328%2C%22width%22%3A220%2C%22height%22%3A34%2C%22text%22%3A%22%5BN%2C%20REF_TIME%5D%22%7D%2C%7B%22x%22%3A536%2C%22y%22%3A371%2C%22width%22%3A34%2C%22height%22%3A22%2C%22text%22%3A%22CN%22%7D%2C%7B%22x%22%3A132%2C%22y%22%3A369%2C%22width%22%3A404%2C%22height%22%3A33%2C%22text%22%3A%22%23Y%3A%E5%8F%82%E8%80%83%E5%B8%A7%E4%B9%8B%E5%90%8E%E7%9A%84%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%A7%BB%22%7D%2C%7B%22x%22%3A607%2C%22y%22%3A372%2C%22width%22%3A321%2C%22height%22%3A31%2C%22text%22%3A%22%5D%20%5BN%2C%20T-REF_TIME%2C%203%5D%22%7D%2C%7B%22x%22%3A357%2C%22y%22%3A409%2C%22width%22%3A277%2C%22height%22%3A39%2C%22text%22%3A%22%E5%9C%BA%E6%99%AF%E4%B8%ADACTOR%E7%9A%84%E6%95%B0%E9%87%8F%22%7D%2C%7B%22x%22%3A651%2C%22y%22%3A415%2C%22width%22%3A25%2C%22height%22%3A29%2C%22text%22%3A%22N%22%7D%2C%7B%22x%22%3A167%2C%22y%22%3A416%2C%22width%22%3A175%2C%22height%22%3A28%2C%22text%22%3A%22NUM%20NODES%3A%22%7D%2C%7B%22x%22%3A131%2C%22y%22%3A417%2C%22width%22%3A22%2C%22height%22%3A29%2C%22text%22%3A%22%23%22%7D%2C%7B%22x%22%3A131%2C%22y%22%3A456%2C%22width%22%3A558%2C%22height%22%3A37%2C%22text%22%3A%22%23ROTATE_MAT%3A%E6%AF%8F%E4%B8%AAACTOR%E7%9A%84%E6%97%8B%E8%BD%AC%E7%9F%A9%E9%98%B5%22%7D%2C%7B%22x%22%3A706%2C%22y%22%3A459%2C%22width%22%3A154%2C%22height%22%3A32%2C%22text%22%3A%22%5BN%2C%203%2C%203%5D%22%7D%2C%7B%22x%22%3A131%2C%22y%22%3A499%2C%22width%22%3A852%2C%22height%22%3A32%2C%22text%22%3A%22%23TODO%3A%E5%BA%94%E8%AF%A5%E5%A2%9E%E5%8A%A0%E4%B8%AD%E5%BF%83%E7%82%B9%E5%92%8C%E5%8A%A0%E6%9D%83%E5%B9%B3%E5%9D%87%E4%BD%8D%E7%BD%AE%E5%88%B0%E9%A2%84%E5%A4%84%E7%90%86%E5%90%8E%E7%9A%84%E6%95%B0%E6%8D%AE%E9%87%8C%22%7D%2C%7B%22x%22%3A131%2C%22y%22%3A543%2C%22width%22%3A728%2C%22height%22%3A34%2C%22text%22%3A%22%23TODO%3A%E9%81%BF%E5%85%8D%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86(%E5%A5%BD%E5%83%8F%E4%B8%8D%E5%AF%B9)%22%7D%2C%7B%22x%22%3A128%2C%22y%22%3A584%2C%22width%22%3A933%2C%22height%22%3A33%2C%22text%22%3A%22%23TODO%3A%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95%E4%BC%9A%E5%AF%B9%E6%95%B0%E6%8D%AE%E4%BA%A7%E7%94%9F%E4%B8%8D%E5%90%8C%E7%9A%84%E5%BD%B1%E5%93%8D%2C%E6%95%B0%E6%8D%AE%E5%B0%B1%E6%98%AF%E5%BA%94%E8%AF%A5%E4%B8%8D%E4%B8%80%E6%A0%B7%22%7D%2C%7B%22x%22%3A168%2C%22y%22%3A628%2C%22width%22%3A987%2C%22height%22%3A33%2C%22text%22%3A%22TODO%3A%E9%9C%80%E8%A6%81%E7%8E%B0%E9%A2%84%E5%A4%84%E7%90%86%2C%E4%B8%89%E7%A7%8D%E6%96%B9%E6%B3%95%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86%2C%E6%94%BE%E5%88%B0%E4%B8%8D%E5%90%8C%E7%9A%84%E7%9B%AE%E5%BD%95%E9%87%8C%22%7D%2C%7B%22x%22%3A131%2C%22y%22%3A634%2C%22width%22%3A19%2C%22height%22%3A26%2C%22text%22%3A%22%23%22%7D%5D%2C%22showTitle%22%3Afalse%2C%22title%22%3A%22%22%2C%22rotation%22%3A0%2C%22crop%22%3A%5B0%2C0%2C1%2C1%5D%2C%22averageHue%22%3A%22%23fcfaf7%22%2C%22id%22%3A%22u946541e8%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                      </card>
+                    </p>
+                    <p data-lake-id="ude7a1ca6" id="ude7a1ca6">
+                      <strong>
+                        <span data-lake-id="ucd3faf05" id="ucd3faf05" class="lake-fontsize-14" style="background-color: #FBDE28">​</span>
+                      </strong>
+                      <br>
+                      </p>
+                      <p data-lake-id="u1a183065" id="u1a183065">
+                        <card type="inline" name="image" value="data:%7B%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F0%2F2025%2Fpng%2F34814693%2F1743083754327-f56a41bf-12fd-4e79-8a5f-bd647584a364.png%22%2C%22taskId%22%3A%22uaad30843-d845-45f0-b4cc-5ea41461812%22%2C%22clientId%22%3A%22uc46cee03-d577-4%22%2C%22originalType%22%3A%22binary%22%2C%22width%22%3A339.3993225097656%2C%22height%22%3A421%2C%22linkTarget%22%3A%22_blank%22%2C%22name%22%3A%22%E5%9B%BE%E7%89%87.png%22%2C%22size%22%3A200908%2C%22from%22%3A%22paste%22%2C%22originWidth%22%3A634%2C%22originHeight%22%3A786%2C%22ratio%22%3A1.6666666666666667%2C%22status%22%3A%22done%22%2C%22style%22%3A%22none%22%2C%22search%22%3A%22%E5%9C%A8F%E9%A2%84%E6%B5%8B%E6%A8%A1%E5%BC%8FY%E4%B8%AD%2C%E9%80%89%E6%8B%A9%E5%85%B7%E6%9C%89%E6%9C%80%E5%B0%8FJPE%E6%8C%87%E6%A0%87%E7%9A%84%E6%A8%A1%E5%BC%8F%E4%BD%9C%E4%B8%BA%E8%AE%A1%E7%AE%97%E6%89%80%E6%9C%89%E6%8C%87%E6%A0%87%E7%9A%84%E6%A8%A1%E5%BC%8F.%20APE%3A%E5%AF%B9%E9%BD%90%E7%9A%84%E6%AF%8F%E5%85%B3%E8%8A%82%E5%B9%B3%E5%9D%87%E4%BD%8D%E7%BD%AE%E8%AF%AF%E5%B7%AE%E7%94%A8%E4%BA%8E%E8%AF%84%E4%BC%B0%E9%A2%84%E6%B5%8B%E7%9A%84%E5%B1%80%20%E9%83%A8%E8%BF%90%E5%8A%A8.L2%E9%AB%93%E5%85%B3%E8%8A%82%E5%9D%90%E6%A0%87%E7%B3%BB%E4%B8%AD%E6%AF%8F%E4%B8%AA%E5%85%B3%E8%8A%82%E7%9A%84%E8%B7%9D%E7%A6%BB%E5%9C%A8%E7%BB%99%E5%AE%9A%20%E6%97%B6%E9%97%B4%E6%AD%A5%E9%95%BF%E5%86%85%E5%AF%B9%E6%89%80%E6%9C%89%E5%85%B3%E8%8A%82%E8%BF%9B%E8%A1%8C%E5%B9%B3%E5%9D%87.%20N%201%20APE(POF%2CPOF)%20POF%20GE%20LL%202%20-%20PO%20NXJ%20I1J1%20(1)%20%3A%E6%9C%80%E7%BB%88%E8%B7%9D%E7%A6%BB%E8%AF%AF%E5%B7%AE%E9%80%9A%E8%BF%87%E8%AE%A1%E7%AE%97%E7%BB%99%E5%AE%9A%E6%97%B6%E9%97%B4%E6%AD%A5%E9%95%BF%E7%9A%84%E9%AB%93%E5%85%B3%E8%8A%82%20FDE%3A%E6%9C%80%E7%BB%88%20L2%E8%B7%9D%E7%A6%BB%E6%9D%A5%E8%AF%84%E4%BC%B0%E9%A2%84%E6%B5%8B%E7%9A%84%E5%85%A8%E5%B1%80%E8%BD%A8%E8%BF%B9.%20N%20IN%20FDE(TRF%2CTRF)%20%3B1%20JPE%3A%E5%85%B3%E8%8A%82%E7%B2%BE%E5%BA%A6%E8%AF%AF%E5%B7%AE%E9%80%9A%E8%BF%87%E8%AE%A1%E7%AE%97%E6%89%80%E6%9C%89%E5%85%B3%E8%8A%82%E5%9C%A8%E6%9F%90%E4%B8%AA%E6%97%B6%E9%97%B4%E6%AD%A5%E7%9A%84%E5%B9%B3%E5%9D%87L2%E8%B7%9D%E7%A6%BB%E6%9D%A5%E8%AF%84%E4%BC%B0%E5%85%A8%20%E5%B1%80%E5%92%8C%E5%B1%80%E9%83%A8%E9%A2%84%E6%B5%8B.%20N%20JPE(Y%2CY)%20(3)%20NXJ%20ILJ1%20%E5%85%B6%E4%B8%ADN%E6%98%AF%E4%BB%A3%E7%90%86%E7%9A%84%E6%95%B0%E9%87%8F%2CJ%E6%98%AF%E5%85%B3%E8%8A%82%E7%9A%84%E6%95%B0%E9%87%8F.%22%2C%22ocrLocations%22%3A%5B%7B%22x%22%3A57%2C%22y%22%3A23%2C%22width%22%3A549%2C%22height%22%3A18%2C%22text%22%3A%22%E5%9C%A8F%E9%A2%84%E6%B5%8B%E6%A8%A1%E5%BC%8FY%E4%B8%AD%2C%E9%80%89%E6%8B%A9%E5%85%B7%E6%9C%89%E6%9C%80%E5%B0%8FJPE%E6%8C%87%E6%A0%87%E7%9A%84%E6%A8%A1%E5%BC%8F%E4%BD%9C%E4%B8%BA%E8%AE%A1%E7%AE%97%E6%89%80%E6%9C%89%E6%8C%87%E6%A0%87%E7%9A%84%E6%A8%A1%E5%BC%8F.%22%7D%2C%7B%22x%22%3A55%2C%22y%22%3A80%2C%22width%22%3A528%2C%22height%22%3A27%2C%22text%22%3A%22APE%3A%E5%AF%B9%E9%BD%90%E7%9A%84%E6%AF%8F%E5%85%B3%E8%8A%82%E5%B9%B3%E5%9D%87%E4%BD%8D%E7%BD%AE%E8%AF%AF%E5%B7%AE%E7%94%A8%E4%BA%8E%E8%AF%84%E4%BC%B0%E9%A2%84%E6%B5%8B%E7%9A%84%E5%B1%80%22%7D%2C%7B%22x%22%3A55%2C%22y%22%3A112%2C%22width%22%3A524%2C%22height%22%3A25%2C%22text%22%3A%22%E9%83%A8%E8%BF%90%E5%8A%A8.L2%E9%AB%93%E5%85%B3%E8%8A%82%E5%9D%90%E6%A0%87%E7%B3%BB%E4%B8%AD%E6%AF%8F%E4%B8%AA%E5%85%B3%E8%8A%82%E7%9A%84%E8%B7%9D%E7%A6%BB%E5%9C%A8%E7%BB%99%E5%AE%9A%22%7D%2C%7B%22x%22%3A54%2C%22y%22%3A145%2C%22width%22%3A331%2C%22height%22%3A24%2C%22text%22%3A%22%E6%97%B6%E9%97%B4%E6%AD%A5%E9%95%BF%E5%86%85%E5%AF%B9%E6%89%80%E6%9C%89%E5%85%B3%E8%8A%82%E8%BF%9B%E8%A1%8C%E5%B9%B3%E5%9D%87.%22%7D%2C%7B%22x%22%3A334%2C%22y%22%3A223%2C%22width%22%3A17%2C%22height%22%3A17%2C%22text%22%3A%22N%22%7D%2C%7B%22x%22%3A280%2C%22y%22%3A231%2C%22width%22%3A14%2C%22height%22%3A23%2C%22text%22%3A%221%22%7D%2C%7B%22x%22%3A61%2C%22y%22%3A241%2C%22width%22%3A188%2C%22height%22%3A34%2C%22text%22%3A%22APE(POF%2CPOF)%22%7D%2C%7B%22x%22%3A414%2C%22y%22%3A244%2C%22width%22%3A61%2C%22height%22%3A37%2C%22text%22%3A%22POF%22%7D%2C%7B%22x%22%3A551%2C%22y%22%3A246%2C%22width%22%3A42%2C%22height%22%3A29%2C%22text%22%3A%22GE%20LL%202%22%7D%2C%7B%22x%22%3A481%2C%22y%22%3A249%2C%22width%22%3A53%2C%22height%22%3A25%2C%22text%22%3A%22-%20PO%22%7D%2C%7B%22x%22%3A257%2C%22y%22%3A260%2C%22width%22%3A65%2C%22height%22%3A23%2C%22text%22%3A%22NXJ%22%7D%2C%7B%22x%22%3A327%2C%22y%22%3A279%2C%22width%22%3A67%2C%22height%22%3A16%2C%22text%22%3A%22I1J1%22%7D%2C%7B%22x%22%3A573%2C%22y%22%3A298%2C%22width%22%3A27%2C%22height%22%3A21%2C%22text%22%3A%22(1)%22%7D%2C%7B%22x%22%3A111%2C%22y%22%3A321%2C%22width%22%3A474%2C%22height%22%3A25%2C%22text%22%3A%22%3A%E6%9C%80%E7%BB%88%E8%B7%9D%E7%A6%BB%E8%AF%AF%E5%B7%AE%E9%80%9A%E8%BF%87%E8%AE%A1%E7%AE%97%E7%BB%99%E5%AE%9A%E6%97%B6%E9%97%B4%E6%AD%A5%E9%95%BF%E7%9A%84%E9%AB%93%E5%85%B3%E8%8A%82%22%7D%2C%7B%22x%22%3A56%2C%22y%22%3A324%2C%22width%22%3A104%2C%22height%22%3A20%2C%22text%22%3A%22FDE%3A%E6%9C%80%E7%BB%88%22%7D%2C%7B%22x%22%3A64%2C%22y%22%3A359%2C%22width%22%3A313%2C%22height%22%3A26%2C%22text%22%3A%22L2%E8%B7%9D%E7%A6%BB%E6%9D%A5%E8%AF%84%E4%BC%B0%E9%A2%84%E6%B5%8B%E7%9A%84%E5%85%A8%E5%B1%80%E8%BD%A8%E8%BF%B9.%22%7D%2C%7B%22x%22%3A343%2C%22y%22%3A437%2C%22width%22%3A18%2C%22height%22%3A15%2C%22text%22%3A%22N%22%7D%2C%7B%22x%22%3A309%2C%22y%22%3A450%2C%22width%22%3A21%2C%22height%22%3A46%2C%22text%22%3A%22IN%22%7D%2C%7B%22x%22%3A118%2C%22y%22%3A459%2C%22width%22%3A184%2C%22height%22%3A25%2C%22text%22%3A%22FDE(TRF%2CTRF)%22%7D%2C%7B%22x%22%3A338%2C%22y%22%3A494%2C%22width%22%3A30%2C%22height%22%3A13%2C%22text%22%3A%22%3B1%22%7D%2C%7B%22x%22%3A56%2C%22y%22%3A526%2C%22width%22%3A543%2C%22height%22%3A18%2C%22text%22%3A%22JPE%3A%E5%85%B3%E8%8A%82%E7%B2%BE%E5%BA%A6%E8%AF%AF%E5%B7%AE%E9%80%9A%E8%BF%87%E8%AE%A1%E7%AE%97%E6%89%80%E6%9C%89%E5%85%B3%E8%8A%82%E5%9C%A8%E6%9F%90%E4%B8%AA%E6%97%B6%E9%97%B4%E6%AD%A5%E7%9A%84%E5%B9%B3%E5%9D%87L2%E8%B7%9D%E7%A6%BB%E6%9D%A5%E8%AF%84%E4%BC%B0%E5%85%A8%22%7D%2C%7B%22x%22%3A56%2C%22y%22%3A555%2C%22width%22%3A103%2C%22height%22%3A16%2C%22text%22%3A%22%E5%B1%80%E5%92%8C%E5%B1%80%E9%83%A8%E9%A2%84%E6%B5%8B.%22%7D%2C%7B%22x%22%3A333%2C%22y%22%3A610%2C%22width%22%3A18%2C%22height%22%3A22%2C%22text%22%3A%22N%22%7D%2C%7B%22x%22%3A126%2C%22y%22%3A636%2C%22width%22%3A124%2C%22height%22%3A24%2C%22text%22%3A%22JPE(Y%2CY)%22%7D%2C%7B%22x%22%3A572%2C%22y%22%3A637%2C%22width%22%3A29%2C%22height%22%3A24%2C%22text%22%3A%22(3)%22%7D%2C%7B%22x%22%3A258%2C%22y%22%3A653%2C%22width%22%3A62%2C%22height%22%3A19%2C%22text%22%3A%22NXJ%22%7D%2C%7B%22x%22%3A327%2C%22y%22%3A670%2C%22width%22%3A68%2C%22height%22%3A15%2C%22text%22%3A%22ILJ1%22%7D%2C%7B%22x%22%3A99%2C%22y%22%3A712%2C%22width%22%3A398%2C%22height%22%3A30%2C%22text%22%3A%22%E5%85%B6%E4%B8%ADN%E6%98%AF%E4%BB%A3%E7%90%86%E7%9A%84%E6%95%B0%E9%87%8F%2CJ%E6%98%AF%E5%85%B3%E8%8A%82%E7%9A%84%E6%95%B0%E9%87%8F.%22%7D%5D%2C%22showTitle%22%3Afalse%2C%22title%22%3A%22%22%2C%22rotation%22%3A0%2C%22crop%22%3A%5B0%2C0%2C1%2C1%5D%2C%22averageHue%22%3A%22%23f9f9f7%22%2C%22id%22%3A%22uf7b4ccec%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                        </card>
+                        <card type="inline" name="image" value="data:%7B%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F0%2F2025%2Fpng%2F34814693%2F1743083744357-2d7190e7-b8c3-4157-813a-997a271d6f46.png%22%2C%22taskId%22%3A%22u8fed66c9-4381-4568-ad15-4966e7838ac%22%2C%22clientId%22%3A%22uc46cee03-d577-4%22%2C%22originalType%22%3A%22binary%22%2C%22width%22%3A172.2%2C%22height%22%3A235%2C%22linkTarget%22%3A%22_blank%22%2C%22name%22%3A%22%E5%9B%BE%E7%89%87.png%22%2C%22size%22%3A25467%2C%22from%22%3A%22paste%22%2C%22originWidth%22%3A287%2C%22originHeight%22%3A392%2C%22ratio%22%3A1.6666666666666667%2C%22status%22%3A%22done%22%2C%22style%22%3A%22none%22%2C%22search%22%3A%22%22%2C%22ocrLocations%22%3A%5B%5D%2C%22showTitle%22%3Afalse%2C%22title%22%3A%22%22%2C%22rotation%22%3A0%2C%22crop%22%3A%5B0%2C0%2C1%2C1%5D%2C%22averageHue%22%3A%22%23e8e8e8%22%2C%22id%22%3A%22u1862e6ad%22%2C%22margin%22%3A%7B%22top%22%3Atrue%2C%22bottom%22%3Atrue%7D%7D">
+                        </card>
+                      </p>
+                      <p data-lake-id="uc4421ff0" id="uc4421ff0">
+                        <br>
+                        </p>
+                        <h1 data-lake-id="ke9Zh" id="ke9Zh">
+                          <span data-lake-id="u8d7a2497" id="u8d7a2497">五、评估指标</span>
+                        </h1>
+                        <p data-lake-id="udf9b5ec2" id="udf9b5ec2">
+                          <span data-lake-id="u53c8a7c4" id="u53c8a7c4">在三维轨迹预测和人体姿态预测任务中，JPE、FDE、APE 是常用的评估指标，用于衡量预测结果与真实值之间的误差。以下是这些指标的具体解释：</span>
+                        </p>
+                        <h3 data-lake-id="HWssN" id="HWssN">
+                          <span data-lake-id="ud8db39e6" id="ud8db39e6">1. </span>
+                          <strong>
+                            <span data-lake-id="u3f732fed" id="u3f732fed">JPE (Joint Position Error)</span>
+                          </strong>
+                        </h3>
+                        <ul list="ued6bd19f">
+                          <li fid="u6e63eaf3" data-lake-id="u59f56896" id="u59f56896">
+                            <strong>
+                              <span data-lake-id="u4187f381" id="u4187f381">全称</span>
+                            </strong>
+                            <span data-lake-id="u702b52fa" id="u702b52fa">：Joint Position Error</span>
+                          </li>
+                          <li fid="u6e63eaf3" data-lake-id="ubcf60083" id="ubcf60083">
+                            <strong>
+                              <span data-lake-id="udced7fd5" id="udced7fd5">中文</span>
+                            </strong>
+                            <span data-lake-id="u87fc166a" id="u87fc166a">：关节位置误差</span>
+                          </li>
+                          <li fid="u6e63eaf3" data-lake-id="ud72844e0" id="ud72844e0">
+                            <strong>
+                              <span data-lake-id="u948e4815" id="u948e4815">定义</span>
+                            </strong>
+                            <span data-lake-id="u36415f34" id="u36415f34">：JPE 衡量的是预测的关节位置与真实关节位置之间的欧氏距离（L2距离）。它通常是对所有关节的误差取平均值，用于评估全局和局部预测的准确性。</span>
+                          </li>
+                          <li fid="u6e63eaf3" data-lake-id="u437e164b" id="u437e164b">
+                            <strong>
+                              <span data-lake-id="u64a63d59" id="u64a63d59">公式</span>
+                            </strong>
+                            <span data-lake-id="u69e92101" id="u69e92101">：<br />
+                            </span>
+                            <em>
+                              <span data-lake-id="ua5e3314b" id="ua5e3314b">
+                                <br />
+                              </span>
+                            </em>
+                            <em>
+                              <span data-lake-id="u91799989" id="u91799989">其中，( \hat{y}</span>
+                            </em>
+                            <span data-lake-id="u714a6ff3" id="u714a6ff3">{n,j} ) 是预测的关节位置，( y_{n,j} ) 是真实的关节位置，( N ) 是智能体数量，( J ) 是关节数量。</span>
+                          </li>
+                        </ul>
+                        <p data-lake-id="u58d2e652" id="u58d2e652">
+                          <card type="inline" name="math" value="data:%7B%22code%22%3A%22J%20P%20E%3D%5C%5Cfrac%7B1%7D%7BN%20%5C%5Ctimes%20J%7D%20%5C%5Csum_%7Bn%3D1%7D%5E%7BN%7D%20%5C%5Csum_%7Bj%3D1%7D%5E%7BJ%7D%5C%5Cleft%5C%5C%7C%5C%5Cboldsymbol%7By%7D_%7Bn%2C%20j%7D-y_%7Bn%2C%20j%7D%5C%5Cright%5C%5C%7C_%7B2%7D%22%2C%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F__latex%2F14dd4228197d19b354b58dd2920a1bca.svg%22%2C%22id%22%3A%22JktQe%22%7D">
+                          </card>
+                        </p>
+                        <ul list="ued6bd19f" start="5">
+                          <li fid="u6e63eaf3" data-lake-id="u935926ab" id="u935926ab">
+                            <strong>
+                              <span data-lake-id="ud5eaed95" id="ud5eaed95">意义</span>
+                            </strong>
+                            <span data-lake-id="ud85678fd" id="ud85678fd">：JPE 越小，表示预测的关节位置越接近真实值，模型的预测精度越高。</span>
+                          </li>
+                        </ul>
+                        <h3 data-lake-id="xI9KO" id="xI9KO">
+                          <span data-lake-id="u2b29767d" id="u2b29767d">2. </span>
+                          <strong>
+                            <span data-lake-id="u4817f711" id="u4817f711">FDE (Final Displacement Error)</span>
+                          </strong>
+                        </h3>
+                        <ul list="uc7381987">
+                          <li fid="u3fc2708a" data-lake-id="ub343c71f" id="ub343c71f">
+                            <strong>
+                              <span data-lake-id="u4979bd93" id="u4979bd93">全称</span>
+                            </strong>
+                            <span data-lake-id="ufe2a3807" id="ufe2a3807">：Final Displacement Error</span>
+                          </li>
+                          <li fid="u3fc2708a" data-lake-id="u60a04b9e" id="u60a04b9e">
+                            <strong>
+                              <span data-lake-id="ue7c76905" id="ue7c76905">中文</span>
+                            </strong>
+                            <span data-lake-id="ub77db560" id="ub77db560">：最终位移误差</span>
+                          </li>
+                          <li fid="u3fc2708a" data-lake-id="ued730155" id="ued730155">
+                            <strong>
+                              <span data-lake-id="u8fa01cc1" id="u8fa01cc1">定义</span>
+                            </strong>
+                            <span data-lake-id="u27ab16b0" id="u27ab16b0">：FDE 衡量的是预测的最终位置与真实最终位置之间的欧氏距离。它通常用于评估全局轨迹预测的准确性，特别是在预测时间序列的最后一个时间步时。</span>
+                          </li>
+                          <li fid="u3fc2708a" data-lake-id="uecd1274b" id="uecd1274b">
+                            <strong>
+                              <span data-lake-id="u08aa44d5" id="u08aa44d5">公式</span>
+                            </strong>
+                            <span data-lake-id="u5aa6834c" id="u5aa6834c">：<br />
+                            </span>
+                            <span data-lake-id="ua2c0b3c2" id="ua2c0b3c2">[</span>
+                            <span data-lake-id="u7007d6db" id="u7007d6db">
+                              <br />
+                            </span>
+                            <span data-lake-id="u438951be" id="u438951be">\text{FDE} = \left</span>
+                            <span data-lake-id="uac828d1e" id="uac828d1e">|</span>
+                            <span data-lake-id="u3801e47f" id="u3801e47f"> \hat{y}</span>
+                            <em>
+                              <span data-lake-id="u576acbed" id="u576acbed">{T_f} - y</span>
+                            </em>
+                            <span data-lake-id="ua01d8439" id="ua01d8439">{T_f} \right</span>
+                            <span data-lake-id="uf90c931a" id="uf90c931a">|</span>
+                            <em>
+                              <span data-lake-id="uf443bb07" id="uf443bb07">2<br />
+                              </span>
+                            </em>
+                            <em>
+                              <span data-lake-id="uec6cd1c8" id="uec6cd1c8">]</span>
+                            </em>
+                            <em>
+                              <span data-lake-id="ud8a246a4" id="ud8a246a4">
+                                <br />
+                              </span>
+                            </em>
+                            <em>
+                              <span data-lake-id="u1fa184ab" id="u1fa184ab">其中，</span>
+                            </em>
+                            <em>
+                              <span data-lake-id="ucf563397" id="ucf563397">(</span>
+                            </em>
+                            <em>
+                              <span data-lake-id="u207fff0f" id="u207fff0f"> \hat{y}</span>
+                            </em>
+                            <span data-lake-id="u6a8489f7" id="u6a8489f7">{T_f} </span>
+                            <span data-lake-id="udc31d786" id="udc31d786">)</span>
+                            <span data-lake-id="uc4beb536" id="uc4beb536"> 是预测的最终位置，</span>
+                            <span data-lake-id="uf31e83b8" id="uf31e83b8">(</span>
+                            <span data-lake-id="u8b2b5008" id="u8b2b5008"> y_{T_f} </span>
+                            <span data-lake-id="u25da475f" id="u25da475f">)</span>
+                            <span data-lake-id="ubf10d7f3" id="ubf10d7f3"> 是真实的最终位置。</span>
+                          </li>
+                          <li fid="u3fc2708a" data-lake-id="u5394b65a" id="u5394b65a">
+                            <strong>
+                              <span data-lake-id="uc186dbad" id="uc186dbad">意义</span>
+                            </strong>
+                            <span data-lake-id="u28eb8d54" id="u28eb8d54">：FDE 越小，表示模型在最终时刻的预测越准确，特别是在长时预测任务中尤为重要。</span>
+                          </li>
+                        </ul>
+                        <h3 data-lake-id="eDbrv" id="eDbrv">
+                          <span data-lake-id="u7b753df7" id="u7b753df7">3. </span>
+                          <strong>
+                            <span data-lake-id="u335a7c73" id="u335a7c73">APE (Aligned Position Error)</span>
+                          </strong>
+                        </h3>
+                        <ul list="ua33cef0b">
+                          <li fid="uea44dbe3" data-lake-id="u803fb124" id="u803fb124">
+                            <strong>
+                              <span data-lake-id="u9eca1991" id="u9eca1991">全称</span>
+                            </strong>
+                            <span data-lake-id="u7c253dba" id="u7c253dba">：Aligned Position Error</span>
+                          </li>
+                          <li fid="uea44dbe3" data-lake-id="u05548b2b" id="u05548b2b">
+                            <strong>
+                              <span data-lake-id="u53548e94" id="u53548e94">中文</span>
+                            </strong>
+                            <span data-lake-id="u7ba8ef78" id="u7ba8ef78">：对齐位置误差</span>
+                          </li>
+                          <li fid="uea44dbe3" data-lake-id="u49e190ee" id="u49e190ee">
+                            <strong>
+                              <span data-lake-id="uc5538329" id="uc5538329">定义</span>
+                            </strong>
+                            <span data-lake-id="uc6d5b417" id="uc6d5b417">：APE 衡量的是在局部坐标系（通常以髋关节为参考点）下，预测的关节位置与真实关节位置之间的欧氏距离。它主要用于评估局部姿态预测的准确性。</span>
+                          </li>
+                          <li fid="uea44dbe3" data-lake-id="u8540d49f" id="u8540d49f">
+                            <strong>
+                              <span data-lake-id="u6c51418b" id="u6c51418b">公式</span>
+                            </strong>
+                            <span data-lake-id="u489633c4" id="u489633c4">：<br />
+                            </span>
+                            <em>
+                              <span data-lake-id="u22e897d9" id="u22e897d9">
+                                <br />
+                              </span>
+                            </em>
+                            <em>
+                              <span data-lake-id="ue66cac1b" id="ue66cac1b">其中，( \hat{p}</span>
+                            </em>
+                            <span data-lake-id="uc27b15db" id="uc27b15db">{n,j} ) 是预测的局部关节位置，( p_{n,j} ) 是真实的局部关节位置。</span>
+                          </li>
+                        </ul>
+                        <p data-lake-id="ua7187702" id="ua7187702">
+                          <card type="inline" name="math" value="data:%7B%22code%22%3A%22%5C%5Ctext%7BAPE%7D%20%3D%20%5C%5Cfrac%7B1%7D%7BN%20%5C%5Ctimes%20J%7D%20%5C%5Csum_%7Bn%3D1%7D%5E%7BN%7D%20%5C%5Csum_%7Bj%3D1%7D%5E%7BJ%7D%20%5C%5C%7C%5C%5Chat%7Bp%7D_%7Bn%2Cj%7D%20-%20p_%7Bn%2Cj%7D%5C%5C%7C_2%22%2C%22src%22%3A%22https%3A%2F%2Fcdn.nlark.com%2Fyuque%2F__latex%2F4b5b842d24289ed4cd2c2d4cc03c0701.svg%22%2C%22id%22%3A%22FYz0Z%22%7D">
+                          </card>
+                        </p>
+                        <ul list="ua33cef0b" start="5">
+                          <li fid="uea44dbe3" data-lake-id="uc432ef5f" id="uc432ef5f">
+                            <strong>
+                              <span data-lake-id="u6fa4c8ee" id="u6fa4c8ee">意义</span>
+                            </strong>
+                            <span data-lake-id="uba567c92" id="uba567c92">：APE 越小，表示模型在局部姿态预测上的精度越高，特别是在多智能体交互场景中，局部姿态的准确性对于理解整体运动至关重要。</span>
+                          </li>
+                        </ul>
+                        <h3 data-lake-id="wjCxq" id="wjCxq">
+                          <span data-lake-id="u67fd9052" id="u67fd9052">总结：</span>
+                        </h3>
+                        <ul list="uf9d055df">
+                          <li fid="u237f71d1" data-lake-id="uc590a3c8" id="uc590a3c8">
+                            <strong>
+                              <span data-lake-id="u42c98cc1" id="u42c98cc1">JPE</span>
+                            </strong>
+                            <span data-lake-id="u90b16d5c" id="u90b16d5c">：评估全局和局部预测的准确性，衡量所有关节的预测误差。</span>
+                          </li>
+                          <li fid="u237f71d1" data-lake-id="u782036d3" id="u782036d3">
+                            <strong>
+                              <span data-lake-id="u47fcfbb9" id="u47fcfbb9">FDE</span>
+                            </strong>
+                            <span data-lake-id="u8eacda7d" id="u8eacda7d">：评估全局轨迹预测的准确性，特别是最终时刻的预测误差。</span>
+                          </li>
+                          <li fid="u237f71d1" data-lake-id="u8b4136bf" id="u8b4136bf">
+                            <strong>
+                              <span data-lake-id="u48cd77b0" id="u48cd77b0">APE</span>
+                            </strong>
+                            <span data-lake-id="ucd733e1a" id="ucd733e1a">：评估局部姿态预测的准确性，衡量在局部坐标系下的关节预测误差。</span>
+                          </li>
+                        </ul>
+                        <p data-lake-id="ud563a106" id="ud563a106">
+                          <span data-lake-id="ue0c3bf34" id="ue0c3bf34">这些指标共同用于全面评估三维轨迹预测模型的性能，帮助研究人员了解模型在不同方面的表现。</span>
+                        </p>

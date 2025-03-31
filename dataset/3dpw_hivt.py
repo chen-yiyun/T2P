@@ -277,9 +277,53 @@ class _3DPW(Dataset):
         # token: B/N_sequences, N/N_agents, T, J, 3 中的 N_sequences 的索引
         for token in tqdm(tokens):
             # 1. 读取原始数据
-            N, T, _, _ = self._raw_file[token].shape
+            N, T, J, _ = self._raw_file[token].shape
             seq_data = self._raw_file[token]
             body_xyz = torch.tensor(seq_data, dtype=torch.float)
+
+            # 根据method(hip, mean,weighted)选择不同的方法
+            # 处理3DPW数据集，支持三种全局-局部分析算法
+            # 1. 均值法：使用所有关节的平均位置
+            # 2. 髋部法：使用髋关节位置(已实现)
+            # 3. 加权平均法：使用加权平均位置
+            seq_tensor = torch.tensor(seq_data, dtype=torch.float)
+            if self.method == "hip":
+                global_traj = seq_tensor[:, :, 0].clone()
+            elif self.method == "mean":
+                global_traj = seq_tensor.mean(dim=2)
+            elif self.method == "weighted":
+                # 加权平均法：为不同关节分配权重
+                # 定义权重（示例权重，可以根据需要调整）
+                # 假设有13个关节点
+                # 定义权重方案（索引: 权重）
+                weight_scheme = {
+                    0: 0.15,
+                    1: 0.15,
+                    2: 0.08,
+                    3: 0.08,
+                    4: 0.05,
+                    5: 0.05,
+                    6: 0.15,
+                    7: 0.10,
+                    8: 0.10,
+                    9: 0.04,
+                    10: 0.04,
+                    11: 0.01,
+                    12: 0.01,
+                }
+
+                # 直接创建权重张量
+                weights = torch.tensor(
+                    [weight_scheme[i] for i in range(len(weight_scheme))]
+                )
+
+                # 归一化
+                weights /= weights.sum()
+
+                # 计算加权平均位置
+                global_traj = torch.tensordot(seq_tensor, weights, dims=([2], [0]))
+            else:
+                raise ValueError(f"Invalid method: {self.method}")
 
             # 2. 分离输入输出轨迹
             # 将seq_data分割为输入轨迹和输出轨迹:
@@ -287,10 +331,9 @@ class _3DPW(Dataset):
             # 2. 每个智能体前ref_time帧/时间步里第一个关节点的坐标变化作为输入轨迹input_traj
             # 3. 每个智能体后续帧/时间步里第一个关节点的坐标变化作为输出轨迹output_traj
             # 4. 转换为float类型的tensor
-            input_traj, output_traj = torch.tensor(
-                seq_data[:, : self.ref_time, 0], dtype=torch.float
-            ), torch.tensor(
-                seq_data[:, self.ref_time :, 0], dtype=torch.float
+            input_traj, output_traj = (
+                global_traj[:, : self.ref_time],
+                global_traj[:, self.ref_time :],
             )  # todo：Only hip joint info(只有髋关节信息)/注:只使用髋关节位置来表示整体运动轨迹
             # 髋部法：用每个智能体的髋关节的位置变化来代表全局意图/全局轨迹
 
@@ -371,6 +414,8 @@ class _3DPW(Dataset):
             # y: 参考帧之后的相对位移序列 [N, T-ref_time, 3]
             # num_nodes: 场景中actor的数量 N
             # rotate_mat: 每个actor的旋转矩阵 [N, 3, 3]
+            # Todo：需要现预处理，三种方法使用不同的数据集，放到不同的目录里
+
             processed = {
                 "body_xyz": body_xyz,
                 "x": x[:, : self.ref_time],
@@ -439,6 +484,7 @@ if __name__ == "__main__":
     # 设置特定参数
     spec_args = {
         "dataset": "3dpw",  # 数据集名称
+        "method": "weighted",  # 方法名称
         "n_jobs": 0,  # 处理数据的进程数,0表示单进程
         "t_h": 2,  # 历史轨迹长度(秒)
         "t_f": 6,  # 预测轨迹长度(秒)
@@ -450,10 +496,16 @@ if __name__ == "__main__":
         "random_flip": True,  # 是否随机翻转数据增强
         "rotate": True,  # 是否进行旋转数据增强
     }
+    # 设置处理目录,根据方法设置不同的处理目录process_dir
+    process_dir = os.path.join(
+        "D:/Downloads/T2P/T2P-main/preprocessed/3dpw_input10_v2",
+        spec_args["method"],
+    )
+
     # 处理训练集
     A1D = _3DPW(
         "train",
-        process_dir="D:/Downloads/T2P/T2P-main/preprocessed1/3dpw_input10_v2",
+        process_dir=process_dir,
         root="data/",
         process=True,
         spec_args=spec_args,
@@ -461,7 +513,7 @@ if __name__ == "__main__":
     # 处理验证集
     A1D = _3DPW(
         "val",
-        process_dir="D:/Downloads/T2P/T2P-main/preprocessed1/3dpw_input10_v2",
+        process_dir=process_dir,
         root="data/",
         process=True,
         spec_args=spec_args,
@@ -469,7 +521,7 @@ if __name__ == "__main__":
     # 处理测试集
     A1D = _3DPW(
         "test",
-        process_dir="D:/Downloads/T2P/T2P-main/preprocessed1/3dpw_input10_v2",
+        process_dir=process_dir,
         root="data/",
         process=True,
         spec_args=spec_args,

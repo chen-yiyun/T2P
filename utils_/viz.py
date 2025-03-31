@@ -86,7 +86,7 @@ EDGES_3DPW = np.array(
 )
 
 
-def viz_trajectory(pred, gt, data, output_dir, batch_idx):
+def viz_trajectory(pred, gt, data, output_dir, batch_idx, method=None):
     """
     可视化轨迹预测结果
     Args:
@@ -95,6 +95,7 @@ def viz_trajectory(pred, gt, data, output_dir, batch_idx):
         data: 数据对象
         output_dir: 输出目录
         batch_idx: 批次索引
+        method: 方法
     """
     # 创建输出目录
     print(f"Visualizing trajectory of batch {batch_idx}")
@@ -115,10 +116,67 @@ def viz_trajectory(pred, gt, data, output_dir, batch_idx):
         .cpu()
         .numpy()
     )
-    x_gt = data.input_seq.reshape(B, N, -1, XYZ_3 // 3, 3)[:, :, :, 0].cpu().numpy()
-    y_gt = gt[:, :, 0].reshape(B, N, T - 1, 3).cpu().numpy()
-    y_pred = pred[:, :, 0].reshape(B, N, T - 1, 3).cpu().detach().numpy()
-
+    print(method)
+    # 根据method选择关节点
+    if method == "hip":
+        # 髋关节轨迹
+        x_gt = data.input_seq.reshape(B, N, -1, XYZ_3 // 3, 3)[:, :, :, 0].cpu().numpy()
+        y_gt = gt[:, :, 0].reshape(B, N, T - 1, 3).cpu().numpy()
+        y_pred = pred[:, :, 0].reshape(B, N, T - 1, 3).cpu().detach().numpy()
+    elif method == "mean":
+        # 平均关节轨迹
+        x_gt = data.input_seq.reshape(B, N, -1, XYZ_3 // 3, 3).mean(dim=3).cpu().numpy()
+        y_gt = gt.mean(dim=2).reshape(B, N, T - 1, 3).cpu().numpy()
+        y_pred = pred.mean(dim=2).reshape(B, N, T - 1, 3).cpu().detach().numpy()
+    elif method == "weighted":
+        # 加权平均关节轨迹
+        # 定义权重方案（索引: 权重）
+        weight_scheme = {
+            0: 0.15,
+            1: 0.15,
+            2: 0.08,
+            3: 0.08,
+            4: 0.05,
+            5: 0.05,
+            6: 0.15,
+            7: 0.10,
+            8: 0.10,
+            9: 0.04,
+            10: 0.04,
+            11: 0.01,
+            12: 0.01,
+        }
+        weights = torch.tensor(
+            [weight_scheme[i] for i in range(len(weight_scheme))]
+        ).cuda()
+        weights = weights / weights.sum()  # 归一化权重
+        x_gt = (
+            torch.tensordot(
+                data.input_seq.reshape(B, N, -1, XYZ_3 // 3, 3),
+                weights,
+                dims=([3], [0]),
+            )
+            .cpu()
+            .numpy()
+        )
+        y_gt = (
+            torch.tensordot(gt, weights, dims=([2], [0]))
+            .reshape(B, N, T - 1, 3)
+            .cpu()
+            .numpy()
+        )
+        y_pred = (
+            torch.tensordot(pred, weights, dims=([2], [0]))
+            .reshape(B, N, T - 1, 3)
+            .cpu()
+            .detach()
+            .numpy()
+        )
+    else:
+        raise ValueError(f"Invalid method: {method}")
+    # x_gt = data.input_seq.reshape(B, N, -1, XYZ_3 // 3, 3)[:, :, :, 0].cpu().numpy()
+    # y_gt = gt[:, :, 0].reshape(B, N, T - 1, 3).cpu().numpy()
+    # y_pred = pred[:, :, 0].reshape(B, N, T - 1, 3).cpu().detach().numpy()
     # 遍历每个场景
     for scene_idx in range(B):
         if padding_mask_fut[scene_idx].sum() <= 1:
@@ -181,7 +239,7 @@ def viz_trajectory(pred, gt, data, output_dir, batch_idx):
         plt.cla()
 
 
-def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None):
+def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None, method=None):
     """
     可视化关节点预测结果
     Args:
@@ -209,6 +267,7 @@ def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None):
         .cpu()
         .numpy()
     )
+    # x_gt和y_gt的值后面被覆盖了,先注释掉
     x_gt = data.input_seq.reshape(B, N, -1, XYZ_3 // 3, 3)[:, :, :, 0].cpu().numpy()
     y_gt = gt.reshape(B, N, T - 1, XYZ_3 // 3, 3).cpu().numpy()
     y_pred = pred.reshape(B, N, T - 1, XYZ_3 // 3, 3).cpu().detach().numpy()
@@ -227,6 +286,9 @@ def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None):
         .cpu()
         .numpy()[:, :, 1:]
     )
+    x_gt_tensor = torch.from_numpy(x_gt).cuda()
+    y_gt_tensor = torch.from_numpy(y_gt).cuda()
+    y_pred_tensor = torch.from_numpy(y_pred).cuda()
     padding_mask_past = (
         ~data.padding_mask.reshape(B, N, data.padding_mask.shape[1])[:, :, : -(T - 1)]
         .cpu()
@@ -279,17 +341,70 @@ def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None):
             if padding_mask_past[scene_idx, :, frame_idx_past].sum() < 1:
                 continue
 
-            # 绘制历史轨迹点
+            # !绘制历史轨迹点
             for agent_idx in range(x_gt.shape[1]):
                 for traj_frame_idx in range(0, frame_idx_past + 1):
-                    ax.scatter3D(
-                        x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 0],
-                        x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 1],
-                        0,
-                        c="black",
-                        alpha=1.0,
-                        s=5,
-                    )
+                    if method == "hip":
+                        ax.scatter3D(
+                            x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 0],
+                            x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 1],
+                            0,
+                            c="black",
+                            alpha=1.0,
+                            s=5,
+                        )
+                    elif method == "mean":
+                        ax.scatter3D(
+                            x_gt.mean(axis=3)[scene_idx, agent_idx, traj_frame_idx, 0],
+                            x_gt.mean(axis=3)[scene_idx, agent_idx, traj_frame_idx, 1],
+                            0,
+                            c="black",
+                            alpha=1.0,
+                            s=5,
+                        )
+                    elif method == "weighted":
+                        # 定义权重方案（索引: 权重）
+                        weight_scheme = {
+                            0: 0.15,
+                            1: 0.15,
+                            2: 0.08,
+                            3: 0.08,
+                            4: 0.05,
+                            5: 0.05,
+                            6: 0.15,
+                            7: 0.10,
+                            8: 0.10,
+                            9: 0.04,
+                            10: 0.04,
+                            11: 0.01,
+                            12: 0.01,
+                        }
+                        weights = torch.tensor(
+                            [weight_scheme[i] for i in range(len(weight_scheme))]
+                        ).cuda()
+                        weights = weights / weights.sum()  # 归一化权重
+                        ax.scatter3D(
+                            torch.tensordot(
+                                x_gt_tensor,
+                                weights,
+                                dims=([3], [0]),
+                            )
+                            .cpu()
+                            .numpy()[scene_idx, agent_idx, traj_frame_idx, 0],
+                            torch.tensordot(
+                                x_gt_tensor,
+                                weights,
+                                dims=([3], [0]),
+                            )
+                            .cpu()
+                            .numpy()[scene_idx, agent_idx, traj_frame_idx, 1],
+                            0,
+                            c="black",
+                            alpha=1.0,
+                            s=5,
+                        )
+                    else:
+                        raise ValueError(f"Invalid method: {method}")
 
             # 根据时间分别处理历史和未来帧
             if frame_idx_ < data.input_seq.shape[2]:  # 历史帧
@@ -342,45 +457,150 @@ def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None):
                         line = Line3D(x_, y_, z_, c="black")
                         ax.add_line(line)
 
-                    # 绘制历史轨迹
+                    # !绘制历史轨迹（这里用的是髋关节的轨迹）
                     for traj_frame_idx in range(0, frame_idx_ - 1):
-                        ax.scatter3D(
-                            x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 0],
-                            x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 1],
-                            0,
-                            c="black",
-                            alpha=1.0,
-                            s=5,
-                        )
+                        if method == "hip":
+                            ax.scatter3D(
+                                x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 0],
+                                x_gt[scene_idx, agent_idx, traj_frame_idx, 0, 1],
+                                0,
+                                c="black",
+                                alpha=1.0,
+                                s=5,
+                            )
+                        elif method == "mean":
+                            ax.scatter3D(
+                                x_gt.mean(axis=3)[
+                                    scene_idx, agent_idx, traj_frame_idx, 0
+                                ],
+                                x_gt.mean(axis=3)[
+                                    scene_idx, agent_idx, traj_frame_idx, 1
+                                ],
+                                0,
+                                c="black",
+                                alpha=1.0,
+                                s=5,
+                            )
+                        elif method == "weighted":
+                            ax.scatter3D(
+                                torch.tensordot(
+                                    x_gt_tensor,
+                                    weights,
+                                    dims=([3], [0]),
+                                )
+                                .cpu()
+                                .numpy()[scene_idx, agent_idx, traj_frame_idx, 0],
+                                torch.tensordot(
+                                    x_gt_tensor,
+                                    weights,
+                                    dims=([3], [0]),
+                                )
+                                .cpu()
+                                .numpy()[scene_idx, agent_idx, traj_frame_idx, 1],
+                                0,
+                                c="black",
+                                alpha=1.0,
+                                s=5,
+                            )
+                        else:
+                            raise ValueError(f"Invalid method: {method}")
 
             else:  # 未来帧
                 frame_idx = frame_idx_ - data.input_seq.shape[2]
                 if padding_mask_fut[scene_idx, :, frame_idx].sum() < 1:
                     continue
 
-                # 绘制预测和真实轨迹/Plot pred/gt trajectory
+                # !绘制预测和真实轨迹/Plot pred/gt trajectory
                 for agent_idx in range(y_pred.shape[1]):
                     if padding_mask_fut[scene_idx, agent_idx, frame_idx] == False:
                         continue
                     for traj_frame_idx in range(0, data.output_seq.shape[2] - 1):
-                        ax.scatter3D(
-                            y_pred[scene_idx, agent_idx, traj_frame_idx, 0, 0],
-                            y_pred[scene_idx, agent_idx, traj_frame_idx, 0, 1],
-                            0,
-                            c=HUMAN_COLORS[agent_idx],
-                            alpha=1.0,
-                            s=5,
-                        )
-                        ax.scatter3D(
-                            y_gt[scene_idx, agent_idx, traj_frame_idx, 0, 0],
-                            y_gt[scene_idx, agent_idx, traj_frame_idx, 0, 1],
-                            0,
-                            c="black",
-                            alpha=1.0,
-                            s=5,
-                        )
-
-                # 绘制预测的关节点和骨骼/plot pred motion
+                        if method == "hip":
+                            ax.scatter3D(
+                                y_pred[scene_idx, agent_idx, traj_frame_idx, 0, 0],
+                                y_pred[scene_idx, agent_idx, traj_frame_idx, 0, 1],
+                                0,
+                                c=HUMAN_COLORS[agent_idx],
+                                alpha=1.0,
+                                s=5,
+                            )
+                            ax.scatter3D(
+                                y_gt[scene_idx, agent_idx, traj_frame_idx, 0, 0],
+                                y_gt[scene_idx, agent_idx, traj_frame_idx, 0, 1],
+                                0,
+                                c="black",
+                                alpha=1.0,
+                                s=5,
+                            )
+                        elif method == "mean":
+                            ax.scatter3D(
+                                y_pred.mean(axis=3)[
+                                    scene_idx, agent_idx, traj_frame_idx, 0
+                                ],
+                                y_pred.mean(axis=3)[
+                                    scene_idx, agent_idx, traj_frame_idx, 1
+                                ],
+                                0,
+                                c=HUMAN_COLORS[agent_idx],
+                                alpha=1.0,
+                                s=5,
+                            )
+                            ax.scatter3D(
+                                y_gt.mean(axis=3)[
+                                    scene_idx, agent_idx, traj_frame_idx, 0
+                                ],
+                                y_gt.mean(axis=3)[
+                                    scene_idx, agent_idx, traj_frame_idx, 1
+                                ],
+                                0,
+                                c="black",
+                                alpha=1.0,
+                                s=5,
+                            )
+                        elif method == "weighted":
+                            ax.scatter3D(
+                                torch.tensordot(
+                                    y_pred_tensor,
+                                    weights,
+                                    dims=([3], [0]),
+                                )
+                                .cpu()
+                                .numpy()[scene_idx, agent_idx, traj_frame_idx, 0],
+                                torch.tensordot(
+                                    y_pred_tensor,
+                                    weights,
+                                    dims=([3], [0]),
+                                )
+                                .cpu()
+                                .numpy()[scene_idx, agent_idx, traj_frame_idx, 1],
+                                0,
+                                c=HUMAN_COLORS[agent_idx],
+                                alpha=1.0,
+                                s=5,
+                            )
+                            ax.scatter3D(
+                                torch.tensordot(
+                                    y_gt_tensor,
+                                    weights,
+                                    dims=([3], [0]),
+                                )
+                                .cpu()
+                                .numpy()[scene_idx, agent_idx, traj_frame_idx, 0],
+                                torch.tensordot(
+                                    y_gt_tensor,
+                                    weights,
+                                    dims=([3], [0]),
+                                )
+                                .cpu()
+                                .numpy()[scene_idx, agent_idx, traj_frame_idx, 1],
+                                0,
+                                c="black",
+                                alpha=1.0,
+                                s=5,
+                            )
+                        else:
+                            raise ValueError(f"Invalid method: {method}")
+                # !绘制预测的关节点和骨骼/plot pred motion
                 for agent_idx in range(y_pred.shape[1]):
                     if padding_mask_fut[scene_idx, agent_idx, frame_idx] == False:
                         continue
@@ -517,7 +737,9 @@ def viz_joint(pred, gt, data, output_dir, batch_idx, bones=None):
         save_as_gif_v2(gif_save_dir, frame_save_dir, TOTAL_T, batch_idx, scene_idx_list)
 
 
-def viz_joint_jansang_v2(pred, gt, data, output_dir, batch_idx, bones=None):
+def viz_joint_jansang_v2(
+    pred, gt, data, output_dir, batch_idx, bones=None, method=None
+):
     """
     可视化关节点预测结果(Jansang版本)
     Args:

@@ -42,6 +42,7 @@ def main(conf):
         model.load_state_dict(model_ckpt['state_dict'])
     
     # 将模型移至GPU
+    # model.cuda()
     model.net.cuda()
     
     # 设置TensorBoard日志记录器

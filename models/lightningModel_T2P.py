@@ -455,14 +455,40 @@ class T2P(nn.Module):
         elif self.method == "weighted":
             # 加权平均法：为不同关节分配权重
             # 定义权重（示例权重，可以根据需要调整）
-            # 假设有13个关节点，为简单起见，我们为髋关节设置较高权重
-            weights = torch.ones(self.num_joints)
-            weights[0] = 2.0  # 髋关节权重更高
-            # 对于其他关节可以根据重要性设置权重
-            # 例如，躯干可能比四肢更重要
+            # 假设有13个关节点
+            # 定义权重方案（索引: 权重）
+            weight_scheme = {
+                0: 0.15,
+                1: 0.15,
+                2: 0.08,
+                3: 0.08,
+                4: 0.05,
+                5: 0.05,
+                6: 0.15,
+                7: 0.10,
+                8: 0.10,
+                9: 0.04,
+                10: 0.04,
+                11: 0.01,
+                12: 0.01,
+            }
+            weights = torch.tensor(
+                [weight_scheme[i] for i in range(len(weight_scheme))]
+            ).cuda()
             weights = weights / weights.sum()  # 归一化权重
-            # ?计算加权平均位置并广播到所有关节
-            input_weighted = torch.tensordot(input_, weights, dims=([2], [0]))
+            # print(f"Current device: {torch.cuda.current_device()}")
+            # print(f"input device: {input_.device}")
+            # print(f"Weights device: {weights.device}")
+            # 确保 weights 在与 input_ 相同的设备上
+            # input_= input_.to("cuda")
+            # output_ = output_.to("cuda")
+            # weights = weights.to("cuda")  # 将 weights 移动到 input_ 的设备上
+            # 计算加权平均位置并广播到所有关节
+            input_weighted = (
+                torch.tensordot(input_, weights, dims=([2], [0]))
+                .unsqueeze(-2)
+                .repeat(1, 1, self.num_joints, 1)
+            )
             offset = input_ - input_weighted
         else:
             raise ValueError(f"Invalid method: {self.method}")
@@ -523,14 +549,32 @@ class T2P(nn.Module):
         elif self.method == "weighted":
             # 加权平均法：为不同关节分配权重
             # 定义权重（示例权重，可以根据需要调整）
-            # 假设有13个关节点，为简单起见，我们为髋关节设置较高权重
-            weights = torch.ones(self.num_joints)
-            weights[0] = 2.0  # 髋关节权重更高
+            # 假设有13个关节点
+            # 定义权重方案（索引: 权重）
+            weight_scheme = {
+                0: 0.15,
+                1: 0.15,
+                2: 0.08,
+                3: 0.08,
+                4: 0.05,
+                5: 0.05,
+                6: 0.15,
+                7: 0.10,
+                8: 0.10,
+                9: 0.04,
+                10: 0.04,
+                11: 0.01,
+                12: 0.01,
+            }
+            weights = torch.tensor(
+                [weight_scheme[i] for i in range(len(weight_scheme))]
+            ).cuda()
             weights = weights / weights.sum()  # 归一化权重
+            # 确保 weights 在与 output_ 相同的设备上
+            # weights = weights.to(output_.device)  # 将 weights 移动到 output_ 的设备上
             # 计算加权平均位置并广播到所有关节
             output_weighted = (
-                (output_ * weights.view(1, 1, -1, 1))
-                .sum(dim=2)
+                torch.tensordot(output_, weights, dims=([2], [0]))
                 .unsqueeze(-2)
                 .repeat(1, 1, self.num_joints, 1)
             )

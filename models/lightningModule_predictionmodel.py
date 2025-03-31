@@ -29,27 +29,29 @@ from utils_.viz import *
 class PredictionModel(pl.LightningModule):
     def __init__(
         self,
-        lr: float = 1e-3,                  # 学习率
-        warmup_epochs: int = 10,           # 预热轮数
-        epochs: int = 60,                  # 总训练轮数
-        weight_decay: float = 1e-4,        # 权重衰减
-        output_time: int = 50,             # 输出时间步长
-        dataset: str = "3dpw",         # 数据集名称
-        batch_size: int = 0,               # 批次大小
-        is_baseline: bool = False,         # 是否为基线模型
-        num_joints: int = 15,              # 关节点数量
-        viz_traj: bool = False,            # 是否可视化轨迹
-        viz_joint: bool = False,           # 是否可视化关节
-        viz_joint_jansang: bool = False,   # 是否可视化Jansang关节
+        lr: float = 1e-3,  # 学习率
+        warmup_epochs: int = 10,  # 预热轮数
+        epochs: int = 60,  # 总训练轮数
+        weight_decay: float = 1e-4,  # 权重衰减
+        output_time: int = 50,  # 输出时间步长
+        dataset: str = "3dpw",  # 数据集名称
+        method: str = "mean",  # 关节点选择方法
+        batch_size: int = 0,  # 批次大小
+        is_baseline: bool = False,  # 是否为基线模型
+        num_joints: int = 15,  # 关节点数量
+        viz_traj: bool = False,  # 是否可视化轨迹
+        viz_joint: bool = False,  # 是否可视化关节
+        viz_joint_jansang: bool = False,  # 是否可视化Jansang关节
     ) -> None:
         super(PredictionModel, self).__init__()
-        
+
         # 保存超参数
         self.warmup_epochs = warmup_epochs
         self.epochs = epochs
         self.lr = lr
         self.weight_decay = weight_decay
         self.dataset = dataset
+        self.method = method
         self.output_time = output_time
         self.batch_size = batch_size
         self.is_baseline = is_baseline
@@ -64,22 +66,30 @@ class PredictionModel(pl.LightningModule):
             if output_time == 20:
                 metrics = MetricCollection(
                     {
-                        "APE_400ms": APE(frame_idx=5),
-                        "APE_800ms": APE(frame_idx=10),
-                        "APE_1200ms": APE(frame_idx=15),
-                        "APE_1600ms": APE(frame_idx=20),
-                        "APE_overall_800ms": APE_overall(frame_idx=10),
-                        "APE_overall_1600ms": APE_overall(frame_idx=20),
-                        "JPE_400ms": JPE(frame_idx=5),
-                        "JPE_800ms": JPE(frame_idx=10),
-                        "JPE_1200ms": JPE(frame_idx=15),
-                        "JPE_1600ms": JPE(frame_idx=20),
-                        "JPE_overall_800ms": JPE_overall(frame_idx=10),
-                        "JPE_overall_1600ms": JPE_overall(frame_idx=20),
-                        "FDE_400ms": FDE(frame_idx=5),
-                        "FDE_800ms": FDE(frame_idx=10),
-                        "FDE_1200ms": FDE(frame_idx=15),
-                        "FDE_1600ms": FDE(frame_idx=20),
+                        "APE_400ms": APE(frame_idx=5, method=self.method).cuda(),
+                        "APE_800ms": APE(frame_idx=10, method=self.method),
+                        "APE_1200ms": APE(frame_idx=15, method=self.method),
+                        "APE_1600ms": APE(frame_idx=20, method=self.method),
+                        "APE_overall_800ms": APE_overall(
+                            frame_idx=10, method=self.method
+                        ),
+                        "APE_overall_1600ms": APE_overall(
+                            frame_idx=20, method=self.method
+                        ),
+                        "JPE_400ms": JPE(frame_idx=5, method=self.method),
+                        "JPE_800ms": JPE(frame_idx=10, method=self.method),
+                        "JPE_1200ms": JPE(frame_idx=15, method=self.method),
+                        "JPE_1600ms": JPE(frame_idx=20, method=self.method),
+                        "JPE_overall_800ms": JPE_overall(
+                            frame_idx=10, method=self.method
+                        ),
+                        "JPE_overall_1600ms": JPE_overall(
+                            frame_idx=20, method=self.method
+                        ),
+                        "FDE_400ms": FDE(frame_idx=5, method=self.method),
+                        "FDE_800ms": FDE(frame_idx=10, method=self.method),
+                        "FDE_1200ms": FDE(frame_idx=15, method=self.method),
+                        "FDE_1600ms": FDE(frame_idx=20, method=self.method),
                     }
                 )
 
@@ -196,16 +206,20 @@ class PredictionModel(pl.LightningModule):
 
         # 计算验证指标
         metrics = self.val_metrics(out, gt, padding_mask)
-        
+
         # 可视化
         if batch_idx != 0:
             if self.viz_traj:
-                viz_trajectory(out, gt, data, self.output_dir, batch_idx)
+                viz_trajectory(
+                    out, gt, data, self.output_dir, batch_idx, method=self.method
+                )
             if self.viz_joint:
-                viz_joint(out, gt, data, self.output_dir, batch_idx)
+                viz_joint(out, gt, data, self.output_dir, batch_idx, method=self.method)
             if self.viz_joint_jansang:
                 if batch_idx < 10:
-                    viz_joint_jansang_v2(out, gt, data, self.output_dir, batch_idx)
+                    viz_joint_jansang_v2(
+                        out, gt, data, self.output_dir, batch_idx, method=self.method
+                    )
 
     def on_validation_epoch_end(self):
         """验证epoch结束时的处理"""
@@ -231,7 +245,7 @@ class PredictionModel(pl.LightningModule):
         # 区分需要和不需要权重衰减的参数
         decay = set()
         no_decay = set()
-        
+
         # 定义需要权重衰减的模块类型
         whitelist_weight_modules = (
             nn.Linear,
@@ -242,7 +256,7 @@ class PredictionModel(pl.LightningModule):
             nn.LSTM,
             nn.GRU,
         )
-        
+
         # 定义不需要权重衰减的模块类型
         blacklist_weight_modules = (
             nn.BatchNorm1d,
@@ -252,7 +266,7 @@ class PredictionModel(pl.LightningModule):
             nn.LayerNorm,
             nn.Embedding,
         )
-        
+
         # 遍历所有参数,分类到decay或no_decay
         for module_name, module in self.named_modules():
             for param_name, param in module.named_parameters():
@@ -268,12 +282,12 @@ class PredictionModel(pl.LightningModule):
                         no_decay.add(full_param_name)
                 elif not ("weight" in param_name or "bias" in param_name):
                     no_decay.add(full_param_name)
-        
+
         # 获取所有参数
         param_dict = {
             param_name: param for param_name, param in self.named_parameters()
         }
-        
+
         # 验证参数分类的正确性
         inter_params = decay & no_decay
         union_params = decay | no_decay
